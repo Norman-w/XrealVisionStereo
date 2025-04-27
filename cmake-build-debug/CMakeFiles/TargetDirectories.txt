@@ -1,0 +1,3 @@
+/Users/norman/CursorProjects/XrealVisionStereo/cmake-build-debug/CMakeFiles/XrealVisionStereo.dir
+/Users/norman/CursorProjects/XrealVisionStereo/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/norman/CursorProjects/XrealVisionStereo/cmake-build-debug/CMakeFiles/rebuild_cache.dir

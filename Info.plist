@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>${EXECUTABLE_NAME}</string>
+    <key>CFBundleIconFile</key>
+    <string></string> <!-- Optional: Add an icon file name -->
+    <key>CFBundleIdentifier</key>
+    <!-- IMPORTANT: Change this to something unique for your app -->
+    <string>com.norman.xrealvisionstereo</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>${PRODUCT_NAME}</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>${MACOSX_DEPLOYMENT_TARGET}</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2024 Norman. All rights reserved.</string>
+    <!-- Request Screen Recording permission description -->
+    <key>NSScreenCaptureDescription</key>
+    <string>This application needs permission to change the display resolution for stereo viewing.</string>
+</dict>
+</plist> 
