@@ -377,5 +377,5 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding wxWidgets
-FIND_PACKAGE_MESSAGE_DETAILS_wxWidgets:INTERNAL=[-L/opt/homebrew/lib;;;-framework IOKit;-framework Carbon;-framework Cocoa;-framework QuartzCore;-framework AudioToolbox;-framework System;-framework OpenGL;-lwx_osx_cocoau_core-3.2;-lwx_baseu-3.2;-lwx_osx_cocoau_webview-3.2][/opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2;/opt/homebrew/include/wx-3.2][v3.2.6()]
+FIND_PACKAGE_MESSAGE_DETAILS_wxWidgets:INTERNAL=[-L/opt/homebrew/lib;;;-framework IOKit;-framework Carbon;-framework Cocoa;-framework QuartzCore;-framework AudioToolbox;-framework System;-framework OpenGL;-lwx_osx_cocoau_core-3.2;-lwx_baseu-3.2;-lwx_osx_cocoau_webview-3.2][/opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2;/opt/homebrew/include/wx-3.2][v3.2.8()]
 

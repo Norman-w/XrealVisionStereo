@@ -50,7 +50,7 @@ cmake_ninja_workdir = /Users/norman/CursorProjects/XrealVisionStereo/cmake-build
 build cmake_object_order_depends_target_XrealVisionStereo: phony || .
 
 build CMakeFiles/XrealVisionStereo.dir/src/main.cpp.o: CXX_COMPILER__XrealVisionStereo_unscanned_Debug /Users/norman/CursorProjects/XrealVisionStereo/src/main.cpp || cmake_object_order_depends_target_XrealVisionStereo
-  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__
+  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__ -DwxDEBUG_LEVEL=0
   DEP_FILE = CMakeFiles/XrealVisionStereo.dir/src/main.cpp.o.d
   FLAGS = -g -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -mmacosx-version-min=12.6 -fcolor-diagnostics
   INCLUDES = -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks -isystem /opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2 -isystem /opt/homebrew/include/wx-3.2
@@ -58,7 +58,7 @@ build CMakeFiles/XrealVisionStereo.dir/src/main.cpp.o: CXX_COMPILER__XrealVision
   OBJECT_FILE_DIR = CMakeFiles/XrealVisionStereo.dir/src
 
 build CMakeFiles/XrealVisionStereo.dir/src/App.cpp.o: CXX_COMPILER__XrealVisionStereo_unscanned_Debug /Users/norman/CursorProjects/XrealVisionStereo/src/App.cpp || cmake_object_order_depends_target_XrealVisionStereo
-  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__
+  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__ -DwxDEBUG_LEVEL=0
   DEP_FILE = CMakeFiles/XrealVisionStereo.dir/src/App.cpp.o.d
   FLAGS = -g -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -mmacosx-version-min=12.6 -fcolor-diagnostics
   INCLUDES = -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks -isystem /opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2 -isystem /opt/homebrew/include/wx-3.2
@@ -66,7 +66,7 @@ build CMakeFiles/XrealVisionStereo.dir/src/App.cpp.o: CXX_COMPILER__XrealVisionS
   OBJECT_FILE_DIR = CMakeFiles/XrealVisionStereo.dir/src
 
 build CMakeFiles/XrealVisionStereo.dir/src/MainFrame.cpp.o: CXX_COMPILER__XrealVisionStereo_unscanned_Debug /Users/norman/CursorProjects/XrealVisionStereo/src/MainFrame.cpp || cmake_object_order_depends_target_XrealVisionStereo
-  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__
+  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__ -DwxDEBUG_LEVEL=0
   DEP_FILE = CMakeFiles/XrealVisionStereo.dir/src/MainFrame.cpp.o.d
   FLAGS = -g -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -mmacosx-version-min=12.6 -fcolor-diagnostics
   INCLUDES = -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks -isystem /opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2 -isystem /opt/homebrew/include/wx-3.2
@@ -74,7 +74,7 @@ build CMakeFiles/XrealVisionStereo.dir/src/MainFrame.cpp.o: CXX_COMPILER__XrealV
   OBJECT_FILE_DIR = CMakeFiles/XrealVisionStereo.dir/src
 
 build CMakeFiles/XrealVisionStereo.dir/src/ScreenResolution.mm.o: OBJCXX_COMPILER__XrealVisionStereo_unscanned_Debug /Users/norman/CursorProjects/XrealVisionStereo/src/ScreenResolution.mm || cmake_object_order_depends_target_XrealVisionStereo
-  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__
+  DEFINES = -DWXUSINGDLL -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX_COCOA__ -D__WXOSX__ -DwxDEBUG_LEVEL=0
   DEP_FILE = CMakeFiles/XrealVisionStereo.dir/src/ScreenResolution.mm.o.d
   FLAGS = -g -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -mmacosx-version-min=12.6 -fcolor-diagnostics
   INCLUDES = -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks -isystem /opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2 -isystem /opt/homebrew/include/wx-3.2

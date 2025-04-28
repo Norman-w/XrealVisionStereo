@@ -1,4 +1,5 @@
 /Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/aarch64/ninja -G Ninja -S /Users/norman/CursorProjects/XrealVisionStereo -B /Users/norman/CursorProjects/XrealVisionStereo/cmake-build-debug
+-- Found wxWidgets: -L/opt/homebrew/lib;;;-framework IOKit;-framework Carbon;-framework Cocoa;-framework QuartzCore;-framework AudioToolbox;-framework System;-framework OpenGL;-lwx_osx_cocoau_core-3.2;-lwx_baseu-3.2;-lwx_osx_cocoau_webview-3.2 (found version "3.2.8")
 -- Configuring done (0.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /Users/norman/CursorProjects/XrealVisionStereo/cmake-build-debug

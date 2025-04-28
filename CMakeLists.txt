@@ -21,6 +21,10 @@ include(${wxWidgets_USE_FILE})
 find_library(CORE_GRAPHICS_FRAMEWORK CoreGraphics)
 find_library(APPKIT_FRAMEWORK AppKit) # AppKit is needed for some CG functions
 
+# --- Add Compile Definition to Disable wx Assertions in Debug --- 
+add_compile_definitions(wxDEBUG_LEVEL=0)
+# --- End Compile Definition ---
+
 # Add source files
 add_executable(${PROJECT_NAME}
     src/main.cpp
@@ -35,6 +39,9 @@ target_link_libraries(${PROJECT_NAME}
     ${CORE_GRAPHICS_FRAMEWORK}
     ${APPKIT_FRAMEWORK}
 )
+
+# Explicitly add wxWidgets include directories (usually handled by USE_FILE, but let's be sure)
+target_include_directories(${PROJECT_NAME} PUBLIC ${wxWidgets_INCLUDE_DIRS})
 
 # Set bundle properties
 set_target_properties(${PROJECT_NAME} PROPERTIES

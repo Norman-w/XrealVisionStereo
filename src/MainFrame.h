@@ -7,12 +7,12 @@
 class MainFrame : public wxFrame {
 public:
     MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
-    ~MainFrame();
+    virtual ~MainFrame();
 
     void PrepareLoadUrl(const wxString& url);
 
 private:
-    wxWebView* webView;
+    wxWebView* webView = nullptr;
     wxTimer m_loadTimer;
     wxString m_urlToLoad;
 
@@ -22,6 +22,12 @@ private:
     void OnWebViewLoaded(wxWebViewEvent& event);
     void OnWebViewError(wxWebViewEvent& event);
     void OnQuit(wxCommandEvent& event);
+
+    void OnCharHook(wxKeyEvent& event);
+    void OnKeyDown(wxKeyEvent& event);
+    void OnKeyUp(wxKeyEvent& event);
+
+    void LogToWebView(const wxString& message);
 
     wxDECLARE_EVENT_TABLE();
 }; 
