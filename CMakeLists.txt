@@ -5,11 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # macOS specific settings
-if(APPLE)
+if (APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS deployment target")
     set(CMAKE_MACOSX_BUNDLE TRUE) # 创建 .app bundle
     set(CMAKE_MACOSX_RPATH TRUE)
-endif()
+endif ()
 
 # Find wxWidgets
 # 需要先安装 wxWidgets (例如通过 Homebrew: brew install wxwidgets)
@@ -27,17 +27,17 @@ add_compile_definitions(wxDEBUG_LEVEL=0)
 
 # Add source files
 add_executable(${PROJECT_NAME}
-    src/main.cpp
-    src/App.h src/App.cpp
-    src/MainFrame.h src/MainFrame.cpp
-    src/ScreenResolution.h src/ScreenResolution.mm
+        src/main.cpp
+        src/App.h src/App.cpp
+        src/MainFrame.h src/MainFrame.cpp
+        src/ScreenResolution.h src/ScreenResolution.mm
 )
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME}
-    ${wxWidgets_LIBRARIES}
-    ${CORE_GRAPHICS_FRAMEWORK}
-    ${APPKIT_FRAMEWORK}
+        ${wxWidgets_LIBRARIES}
+        ${CORE_GRAPHICS_FRAMEWORK}
+        ${APPKIT_FRAMEWORK}
 )
 
 # Explicitly add wxWidgets include directories (usually handled by USE_FILE, but let's be sure)
@@ -45,16 +45,16 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${wxWidgets_INCLUDE_DIRS})
 
 # Set bundle properties
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist"
-    # MACOSX_BUNDLE_ICON_FILE "YourIcon.icns" # Optional
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist"
+        # MACOSX_BUNDLE_ICON_FILE "YourIcon.icns" # Optional
 )
 
 # Copy HTML file to the application bundle resources
 add_custom_command(
-    TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/html $<TARGET_FILE_DIR:${PROJECT_NAME}>/../Resources/html
-    COMMENT "Copying HTML resources to bundle"
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/html $<TARGET_FILE_DIR:${PROJECT_NAME}>/../Resources/html
+        COMMENT "Copying HTML resources to bundle"
 )
 
 # Set C++ standard for Objective-C++ files too
