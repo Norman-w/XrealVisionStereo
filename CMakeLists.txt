@@ -20,6 +20,15 @@ include(${wxWidgets_USE_FILE})
 # Find necessary macOS Frameworks
 find_library(CORE_GRAPHICS_FRAMEWORK CoreGraphics)
 find_library(APPKIT_FRAMEWORK AppKit) # AppKit is needed for some CG functions
+find_library(IOKIT_FRAMEWORK IOKit) # Required for HIDAPI
+
+# Find HIDAPI
+find_library(HIDAPI_LIBRARY hidapi)
+find_path(HIDAPI_INCLUDE_DIR hidapi/hidapi.h)
+
+if(NOT HIDAPI_LIBRARY OR NOT HIDAPI_INCLUDE_DIR)
+    message(FATAL_ERROR "HIDAPI library not found. Please install with: brew install hidapi")
+endif()
 
 # --- Add Compile Definition to Disable wx Assertions in Debug --- 
 add_compile_definitions(wxDEBUG_LEVEL=0)
@@ -31,6 +40,7 @@ add_executable(${PROJECT_NAME}
         src/App.h src/App.cpp
         src/MainFrame.h src/MainFrame.cpp
         src/ScreenResolution.h src/ScreenResolution.mm
+        src/XRealGlassesController.h src/XRealGlassesController.cpp
 )
 
 # Link libraries
@@ -38,10 +48,15 @@ target_link_libraries(${PROJECT_NAME}
         ${wxWidgets_LIBRARIES}
         ${CORE_GRAPHICS_FRAMEWORK}
         ${APPKIT_FRAMEWORK}
+        ${IOKIT_FRAMEWORK}
+        ${HIDAPI_LIBRARY}
 )
 
-# Explicitly add wxWidgets include directories (usually handled by USE_FILE, but let's be sure)
-target_include_directories(${PROJECT_NAME} PUBLIC ${wxWidgets_INCLUDE_DIRS})
+# Explicitly add include directories
+target_include_directories(${PROJECT_NAME} PUBLIC 
+        ${wxWidgets_INCLUDE_DIRS}
+        ${HIDAPI_INCLUDE_DIR}
+)
 
 # Set bundle properties
 set_target_properties(${PROJECT_NAME} PROPERTIES
