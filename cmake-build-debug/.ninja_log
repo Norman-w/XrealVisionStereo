@@ -31,3 +31,15 @@
 484	671	1746283639288374543	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0
 52	822	1746283683634042410	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/INTERFACE_INFO.cpp.o	130565b93ceb3435
 822	1088	1746283684404179762	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0
+52	596	1746286639389560121	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/Index.cpp.o	8945b164ea69d5cb
+596	779	1746286639933905208	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0
+45	1187	1746286759448212364	CMakeFiles/XrealVisionStereo.dir/src/App.cpp.o	a46b178c99563608
+1187	1344	1746286760590961383	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0
+20	502	1746286835771583410	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/CommandHelper.cpp.o	7ef7c15d848f506f
+502	672	1746286836254424262	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0
+46	581	1746286895700174712	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/CommandHelper.cpp.o	7ef7c15d848f506f
+581	753	1746286896235306313	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0
+118	950	1746287407143806527	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/CommandHelper.cpp.o	7ef7c15d848f506f
+118	955	1746287407143206022	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/Index.cpp.o	8945b164ea69d5cb
+119	1103	1746287407144110821	CMakeFiles/XrealVisionStereo.dir/src/XRealGlassesController/DevicesHelper.cpp.o	2f0fec6bded66a58
+1103	1264	1746287408128686319	XrealVisionStereo.app/Contents/MacOS/XrealVisionStereo	179747312d8406a0

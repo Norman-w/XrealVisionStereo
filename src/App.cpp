@@ -18,7 +18,7 @@ bool App::OnInit() {
         return false;
     }
     //设置眼镜的分辨率(发送命令)
-    if (xrealGlassesController->switchMode(true)) {
+    if (!xrealGlassesController->switchMode(true)) {
         wxLogError("设置眼镜分辨率失败");
         return false;
     }

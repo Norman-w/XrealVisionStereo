@@ -141,10 +141,18 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
     }
     Utils::log("设备状态正常", LogLevel::SUCCESS);
     try {
-        // 添加0xFD前缀
-        std::vector<uint8_t> data(command.size() + 1);
-        data[0] = 0xFD; // 添加前缀
-        std::copy(command.begin(), command.end(), data.begin() + 1); // 复制命令数据
+        // 不再添加0xFD前缀，直接使用command
+        // 因为buildCustomDisplayCommand已经设置了buffer[0] = 0xFD
+        const std::vector<uint8_t>& data = command;
+        
+        // 打印数据内容以便调试
+        std::string hexData = "发送数据: ";
+        for (size_t i = 0; i < std::min(data.size(), size_t(32)); i++) {
+            char hexBuf[8];
+            snprintf(hexBuf, sizeof(hexBuf), "%02X ", data[i]);
+            hexData += hexBuf;
+        }
+        Utils::log(hexData, LogLevel::INFO);
 
         // 尝试两种方式发送命令
         try {
@@ -155,7 +163,10 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
                 Utils::log("sendReport返回值: " + std::to_string(result), LogLevel::INFO);
                 return true;
             }
-            Utils::log("sendReport失败", LogLevel::ERROR);
+            
+            // 打印错误信息
+            Utils::log("sendReport失败: " + wcharToString(hid_error(interface->original_hid_device)), LogLevel::ERROR);
+            
         } catch (const std::exception &error) {
             Utils::log(std::string("sendReport异常: ") + error.what(), LogLevel::ERROR);
 
@@ -168,7 +179,7 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
                     Utils::log("sendFeatureReport返回值: " + std::to_string(result), LogLevel::INFO);
                     return true;
                 }
-                Utils::log("sendFeatureReport失败", LogLevel::ERROR);
+                Utils::log("sendFeatureReport失败: " + wcharToString(hid_error(interface->original_hid_device)), LogLevel::ERROR);
             } catch (const std::exception &featureError) {
                 Utils::log(std::string("sendFeatureReport也异常: ") + featureError.what(), LogLevel::ERROR);
             }

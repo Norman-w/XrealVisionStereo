@@ -92,11 +92,26 @@ bool Index::isConnected() const {
  * @return - 切换是否成功
  */
 bool Index::switchMode(const bool mode3D) const {
+    if (!current_connected_device_interface) {
+        Utils::log("设备未连接，请先连接设备", LogLevel::ERROR);
+        return false;
+    }
+
     // 构建显示模式命令
     const uint8_t mode = mode3D ? 3 : 1;  // 假设3是3D模式，1是2D模式
     auto command = CommandHelper::buildCustomDisplayCommand(0x0008, mode);
     
     // 发送命令
     Utils::log(std::string("切换到") + (mode3D ? "3D" : "2D") + "模式", LogLevel::INFO);
-    return DevicesHelper::sendCommand(current_connected_device_interface, command);
+    
+    // 使用同步发送，确保命令成功发送并获取结果
+    bool result = DevicesHelper::sendCommand(current_connected_device_interface, command);
+    
+    if (result) {
+        Utils::log("切换模式命令发送成功", LogLevel::SUCCESS);
+    } else {
+        Utils::log("切换模式命令发送失败", LogLevel::ERROR);
+    }
+    
+    return result;
 }
