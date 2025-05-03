@@ -4,10 +4,25 @@
 
 #include "DevicesHelper.h"
 #include <hidapi/hidapi.h>
-
+#include <locale>
+#include <codecvt>
 
 #include "CommandHelper.h"
 #include "Utils.h"
+
+// 辅助函数: 将wchar_t*转换为std::string
+std::string wcharToString(const wchar_t* wstr) {
+    if (!wstr) return "";
+    
+    try {
+        // 使用C++标准库进行转换
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.to_bytes(wstr);
+    } catch (const std::exception& e) {
+        Utils::log(std::string("字符转换异常: ") + e.what(), LogLevel::ERROR);
+        return "";
+    }
+}
 
 std::vector<GLASSES_INFO> DevicesHelper::enumerateHidDevices(bool filterByVidPid) {
     // Initialize the HIDAPI library
@@ -37,9 +52,9 @@ std::vector<GLASSES_INFO> DevicesHelper::enumerateHidDevices(bool filterByVidPid
             deviceInfo.hid_path = currentDevice->path ? currentDevice->path : "";
             deviceInfo.vendorId = currentDevice->vendor_id;
             deviceInfo.productId = currentDevice->product_id;
-            deviceInfo.serialNumber = currentDevice->serial_number ? currentDevice->serial_number : "";
-            deviceInfo.manufacturer = currentDevice->manufacturer_string ? currentDevice->manufacturer_string : "";
-            deviceInfo.product = currentDevice->product_string ? currentDevice->product_string : "";
+            deviceInfo.serialNumber = wcharToString(currentDevice->serial_number);
+            deviceInfo.manufacturer = wcharToString(currentDevice->manufacturer_string);
+            deviceInfo.product = wcharToString(currentDevice->product_string);
 
             Utils::log(
                 "找到HID设备: " + deviceInfo.product + " (VID: " + std::to_string(deviceInfo.vendorId) + ", PID: " +
