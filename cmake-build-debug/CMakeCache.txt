@@ -220,6 +220,21 @@ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 //Path to a library.
 CORE_GRAPHICS_FRAMEWORK:FILEPATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks/CoreGraphics.framework
 
+//Path to a file.
+HIDAPI_INCLUDE_DIR:PATH=/opt/homebrew/include
+
+//Path to a library.
+HIDAPI_LIBRARY:FILEPATH=/opt/homebrew/lib/libhidapi.dylib
+
+//Path to a library.
+IOKIT_FRAMEWORK:FILEPATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks/IOKit.framework
+
+//Arguments to supply to pkg-config
+PKG_CONFIG_ARGN:STRING=
+
+//pkg-config executable
+PKG_CONFIG_EXECUTABLE:FILEPATH=/opt/homebrew/bin/pkg-config
+
 //Value Computed by CMake
 XrealVisionStereo_BINARY_DIR:STATIC=/Users/norman/CursorProjects/XrealVisionStereo/cmake-build-debug
 
@@ -228,6 +243,9 @@ XrealVisionStereo_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 XrealVisionStereo_SOURCE_DIR:STATIC=/Users/norman/CursorProjects/XrealVisionStereo
+
+//The directory containing a CMake configuration file for hidapi.
+hidapi_DIR:PATH=/opt/homebrew/lib/cmake/hidapi
 
 //Location of wxWidgets library configuration provider binary (wx-config).
 wxWidgets_CONFIG_EXECUTABLE:FILEPATH=/opt/homebrew/bin/wx-config
@@ -378,4 +396,34 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding wxWidgets
 FIND_PACKAGE_MESSAGE_DETAILS_wxWidgets:INTERNAL=[-L/opt/homebrew/lib;;;-framework IOKit;-framework Carbon;-framework Cocoa;-framework QuartzCore;-framework AudioToolbox;-framework System;-framework OpenGL;-lwx_osx_cocoau_core-3.2;-lwx_baseu-3.2;-lwx_osx_cocoau_webview-3.2][/opt/homebrew/lib/wx/include/osx_cocoa-unicode-3.2;/opt/homebrew/include/wx-3.2][v3.2.8()]
+HIDAPI_CFLAGS:INTERNAL=
+HIDAPI_CFLAGS_I:INTERNAL=
+HIDAPI_CFLAGS_OTHER:INTERNAL=
+HIDAPI_FOUND:INTERNAL=
+HIDAPI_INCLUDEDIR:INTERNAL=
+HIDAPI_LIBDIR:INTERNAL=
+HIDAPI_LIBS:INTERNAL=
+HIDAPI_LIBS_L:INTERNAL=
+HIDAPI_LIBS_OTHER:INTERNAL=
+HIDAPI_LIBS_PATHS:INTERNAL=
+HIDAPI_MODULE_NAME:INTERNAL=
+HIDAPI_PREFIX:INTERNAL=
+HIDAPI_STATIC_CFLAGS:INTERNAL=
+HIDAPI_STATIC_CFLAGS_I:INTERNAL=
+HIDAPI_STATIC_CFLAGS_OTHER:INTERNAL=
+HIDAPI_STATIC_LIBDIR:INTERNAL=
+HIDAPI_STATIC_LIBS:INTERNAL=
+HIDAPI_STATIC_LIBS_L:INTERNAL=
+HIDAPI_STATIC_LIBS_OTHER:INTERNAL=
+HIDAPI_STATIC_LIBS_PATHS:INTERNAL=
+HIDAPI_VERSION:INTERNAL=
+HIDAPI_hidapi-libusb_INCLUDEDIR:INTERNAL=
+HIDAPI_hidapi-libusb_LIBDIR:INTERNAL=
+HIDAPI_hidapi-libusb_PREFIX:INTERNAL=
+HIDAPI_hidapi-libusb_VERSION:INTERNAL=
+//ADVANCED property for variable: PKG_CONFIG_ARGN
+PKG_CONFIG_ARGN-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: PKG_CONFIG_EXECUTABLE
+PKG_CONFIG_EXECUTABLE-ADVANCED:INTERNAL=1
+__pkg_config_checked_HIDAPI:INTERNAL=1
 

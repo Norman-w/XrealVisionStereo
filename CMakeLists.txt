@@ -40,7 +40,19 @@ add_executable(${PROJECT_NAME}
         src/App.h src/App.cpp
         src/MainFrame.h src/MainFrame.cpp
         src/ScreenResolution.h src/ScreenResolution.mm
-        src/XRealGlassesController.h src/XRealGlassesController.cpp
+        src/XRealGlassesController/Utils.cpp
+        src/XRealGlassesController/Utils.h
+        src/XRealGlassesController/Index.cpp
+        src/XRealGlassesController/Index.h
+        src/XRealGlassesController/CommandHelper.cpp
+        src/XRealGlassesController/CommandHelper.h
+        src/XRealGlassesController/DevicesHelper.cpp
+        src/XRealGlassesController/DevicesHelper.h
+        src/XRealGlassesController/GLASSES_INFO.cpp
+        src/XRealGlassesController/GLASSES_INFO.h
+        src/XRealGlassesController/LOG_LEVEL.h
+        src/XRealGlassesController/INTERFACE_INFO.cpp
+        src/XRealGlassesController/INTERFACE_INFO.h
 )
 
 # 链接库
