@@ -45,7 +45,7 @@ bool INTERFACE_INFO::close() {
 
 void INTERFACE_INFO::startMessagePolling() {
     std::thread([this]() {
-        while (is_connected) {
+        while (is_connected && original_hid_device) {
             uint8_t buffer[256];
             if (const int bytesRead = hid_read(original_hid_device, buffer, sizeof(buffer)); bytesRead > 0) {
                 std::vector<uint8_t> message(buffer, buffer + bytesRead);
