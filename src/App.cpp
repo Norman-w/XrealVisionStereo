@@ -6,10 +6,24 @@
 #include <wx/msgdlg.h>
 #include <cstdio> // Include for fprintf, stderr
 
+#include "XRealGlassesController/Index.h"
+
 bool App::OnInit() {
     if (!wxApp::OnInit())
         return false;
-
+    //尝试连接到眼镜
+    auto xrealGlassesController = new Index();
+    if (!xrealGlassesController->connectGlasses()) {
+        wxLogError("连接到眼镜失败");
+        return false;
+    }
+    //设置眼镜的分辨率(发送命令)
+    if (xrealGlassesController->switchMode(true)) {
+        wxLogError("设置眼镜分辨率失败");
+        return false;
+    }
+    wxLogInfo("设置眼镜分辨率成功");
+    return true;
     // 1. Save current display mode (Keep this, restore on exit is good practice)
     originalDisplayMode = ScreenResolution::saveCurrentDisplayMode();
     if (!originalDisplayMode) {

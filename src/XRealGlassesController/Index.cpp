@@ -7,6 +7,7 @@
 #include "CommandHelper.h"
 #include "Utils.h"
 
+INTERFACE_INFO* Index::current_connected_device_interface = nullptr;
 
 Index::Index() {
     // if (!isConnected()) {
@@ -33,37 +34,32 @@ Index::~Index() {
     }
 }
 
-bool Index::connectGlasses(const std::string &devicePath) {
-    std::vector<GLASSES_INFO> allDevices = DevicesHelper::enumerateHidDevices(false);
+bool Index::connectGlasses() {
+    const std::vector<GLASSES_INFO> allGlassesList = DevicesHelper::enumerateClassesByHid();
 
-    // 通过XREAL的VID, PID来过滤出来设备
-    std::vector<GLASSES_INFO> allXrealDevices;
-
-    for (const auto &device: allDevices) {
-        if (device.vendorId == DevicesHelper::XREAL_VID && device.productId == DevicesHelper::XREAL_PID) {
-            allXrealDevices.push_back(device);
-        }
-    }
-
-    if (allXrealDevices.empty()) {
-        Utils::log("No XREAL devices found.", LogLevel::ERROR);
+    if (allGlassesList.empty()) {
+        Utils::log("未找到XREAL眼镜,请确定眼镜是否已有效连接", LogLevel::ERROR);
         return false;
     }
 
     // 如果电脑上连接了多个XREAL眼镜,则默认使用第一个.
-    GLASSES_INFO selectedDevice = allXrealDevices[0];
+    const GLASSES_INFO& selectedDevice = allGlassesList[0];
 
-    Utils::log("Attempting to connect to device: " + selectedDevice.hid_path, LogLevel::INFO);
-    //
-    // DevicesHelper devicesHelper;
-    // if (devicesHelper.openDevice(selectedDevice.hid_path)) {
-    //     current_connected_device = devicesHelper.device; // Store the device handle
-    //     Utils::log("Successfully connected to " + selectedDevice.hid_path, LogLevel::SUCCESS);
-    //     return true;
-    // }
+    Utils::log("正在连接到设备: " + selectedDevice.serialNumber, LogLevel::INFO);
 
-    Utils::log("Failed to connect to device at path: " + selectedDevice.hid_path, LogLevel::ERROR);
-    return false;
+    // 检查设备是否已连接
+    if (selectedDevice.interfaces.empty()) {
+        Utils::log("未找到可用的接口", LogLevel::ERROR);
+        return false;
+    }
+
+    // 更新眼镜的有效通讯接口指针
+    auto validateInterface = new INTERFACE_INFO(
+        DevicesHelper::getValidHidInterface(selectedDevice.interfaces));
+    selectedDevice.communicate_interface = validateInterface;
+    Utils::log("找到有效的通讯接口", LogLevel::INFO);
+    current_connected_device_interface = selectedDevice.communicate_interface;
+    return true;
 }
 
 bool Index::disconnectGlasses() {
@@ -102,5 +98,5 @@ bool Index::switchMode(const bool mode3D) const {
     
     // 发送命令
     Utils::log(std::string("切换到") + (mode3D ? "3D" : "2D") + "模式", LogLevel::INFO);
-    return current_connected_device_interface != nullptr && DevicesHelper::sendCommand(current_connected_device_interface, command);
+    return DevicesHelper::sendCommand(current_connected_device_interface, command);
 }

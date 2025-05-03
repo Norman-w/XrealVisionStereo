@@ -81,3 +81,16 @@ void Utils::log(const std::string& message, LogLevel level) {
     // 输出日志
     out << prefix << message << std::endl;
 }
+
+std::string Utils::bytesToHex(const std::vector<uint8_t> &vector) {
+    std::string hexStr;
+    hexStr.reserve(vector.size() * 2); // Reserve space for hex characters
+
+    for (const auto &byte: vector) {
+        const auto hexDigits = "0123456789ABCDEF";
+        hexStr += hexDigits[(byte >> 4) & 0xF]; // High nibble
+        hexStr += hexDigits[byte & 0xF]; // Low nibble
+    }
+    return hexStr; // Return the formatted hex string
+}
+

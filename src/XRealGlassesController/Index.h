@@ -11,16 +11,15 @@
 
 class Index {
 private:
-    INTERFACE_INFO *current_connected_device_interface;
+    static INTERFACE_INFO *current_connected_device_interface;
 public:
     Index();
     ~Index();
     /**
          * 连接XReal眼镜
-         * @param devicePath - 设备路径/标识符，为空时自动查找
          * @return - 连接是否成功
          */
-    bool connectGlasses(const std::string& devicePath = "");
+    static bool connectGlasses();
 
     /**
      * 断开XReal眼镜连接

@@ -17,22 +17,14 @@ public:
 
     // XREAL设备的VID/PID (这些值需要根据实际情况调整)
     static constexpr uint16_t XREAL_VID = 0x3318;  // 假设的VID
-    static constexpr uint16_t XREAL_PID = 0x0424;  // 假设的PID
+    // static constexpr uint16_t XREAL_PID = 0x0424;  // 假设的PID
     //================ 设备连接部分 ================//
     /**
      * 遍历所有计算机的HID设备
      * @param filterByVidPid - 是否按VID/PID过滤XREAL设备
      * @return - 设备信息列表
      */
-    static std::vector<GLASSES_INFO> enumerateHidDevices(bool filterByVidPid = false);
-
-    /**
-     * 遍历指定HID设备的子设备/接口
-     * @param vendorId - 设备厂商ID
-     * @param productId - 设备产品ID
-     * @return - 子设备/接口信息列表
-     */
-    static std::vector<INTERFACE_INFO> enumerateDeviceInterfaces(uint16_t vendorId, uint16_t productId);
+    static std::vector<GLASSES_INFO> enumerateClassesByHid();
 
     /**
      * 打开设备
@@ -51,7 +43,7 @@ public:
      * @param interfaces - 要测试的接口列表
      * @return - 有效接口路径列表
      */
-    static std::vector<std::string> testDeviceCommunication(const std::vector<GLASSES_INFO>& interfaces);
+    static INTERFACE_INFO getValidHidInterface(const std::vector<INTERFACE_INFO>& interfaces);
 
     /**
      * 启动接收消息监听
@@ -79,7 +71,14 @@ public:
      * @return - 发送是否成功
      */
     static bool sendCommand(const INTERFACE_INFO *interface, const std::vector<uint8_t>& command);
-    static bool sendCommand(const INTERFACE_INFO *interface, const std::string& command);
+
+    static void sendCommandAsync(const INTERFACE_INFO *interface, const std::vector<uint8_t> &command,
+                                 std::function<void(bool)> callback);
+
+    static void sendCommandAsync(const INTERFACE_INFO *interface, const std::string &command,
+                          const std::function<void(bool)> &callback);
+
+    static bool sendCommand(const INTERFACE_INFO *interface, const std::string &command);
 };
 
 

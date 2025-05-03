@@ -6,25 +6,26 @@
 #include <hidapi/hidapi.h>
 #include <locale>
 #include <codecvt>
+#include <thread>
 
 #include "CommandHelper.h"
 #include "Utils.h"
 
 // 辅助函数: 将wchar_t*转换为std::string
-std::string wcharToString(const wchar_t* wstr) {
+std::string wcharToString(const wchar_t *wstr) {
     if (!wstr) return "";
-    
+
     try {
         // 使用C++标准库进行转换
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::wstring_convert<std::codecvt_utf8<wchar_t> > converter;
         return converter.to_bytes(wstr);
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         Utils::log(std::string("字符转换异常: ") + e.what(), LogLevel::ERROR);
         return "";
     }
 }
 
-std::vector<GLASSES_INFO> DevicesHelper::enumerateHidDevices(bool filterByVidPid) {
+std::vector<GLASSES_INFO> DevicesHelper::enumerateClassesByHid() {
     // Initialize the HIDAPI library
     if (hid_init() != 0) {
         Utils::log("无法初始化HID库", LogLevel::ERROR);
@@ -34,39 +35,46 @@ std::vector<GLASSES_INFO> DevicesHelper::enumerateHidDevices(bool filterByVidPid
     std::vector<GLASSES_INFO> glassesList;
 
     try {
-        // Enumerate HID devices
-        struct hid_device_info *deviceList = hid_enumerate(0, 0); // Enumerate all devices
-        struct hid_device_info *currentDevice = deviceList;
+        //根据VID查询所有XREAL设备的所有接口
+        struct hid_device_info *deviceList = hid_enumerate(XREAL_VID, 0);
+        //指针游标
+        const struct hid_device_info *currentDevice = deviceList;
 
         while (currentDevice) {
-            // If filtering by VID/PID, skip devices that don't match
-            if (filterByVidPid) {
-                if (currentDevice->vendor_id != DevicesHelper::XREAL_VID || currentDevice->product_id !=
-                    DevicesHelper::XREAL_PID) {
-                    currentDevice = currentDevice->next;
-                    continue;
-                }
+            //如果glassesList已经有了这个序列号的设备,则向其接口列表中添加当前"device"作为接口
+            auto sn = wcharToString(currentDevice->serial_number);
+            //之前已经找到过这个序列号的设备
+            auto thisDevice = std::find_if(glassesList.begin(), glassesList.end(),
+                                           [&sn](const GLASSES_INFO &device) { return device.serialNumber == sn; });
+            //如果找到过这个序列号的设备
+            if (thisDevice != glassesList.end()) {
+                // 找到匹配的设备，添加接口
+                INTERFACE_INFO interfaceInfo{};
+                interfaceInfo.interface_number = currentDevice->interface_number;
+                interfaceInfo.hid_path = currentDevice->path ? currentDevice->path : "";
+                thisDevice->interfaces.push_back(interfaceInfo);
+                Utils::log("找到子设备: Interface = " + std::to_string(interfaceInfo.interface_number), LogLevel::INFO);
+            } else {
+                // 没有找到匹配的设备，创建新的GLASSES_INFO对象
+                GLASSES_INFO newGlassesInfo;
+                newGlassesInfo.vendorId = currentDevice->vendor_id;
+                newGlassesInfo.productId = currentDevice->product_id;
+                newGlassesInfo.serialNumber = sn;
+                newGlassesInfo.manufacturer = wcharToString(currentDevice->manufacturer_string);
+                newGlassesInfo.product = wcharToString(currentDevice->product_string);
+                newGlassesInfo.interfaces.clear();
+                auto interfaceInfo = INTERFACE_INFO{};
+                interfaceInfo.interface_number = currentDevice->interface_number;
+                interfaceInfo.hid_path = currentDevice->path ? currentDevice->path : "";
+                newGlassesInfo.interfaces.push_back(interfaceInfo);
+
+                Utils::log(
+                    "找到HID设备: " + newGlassesInfo.product + " (VID: " + std::to_string(newGlassesInfo.vendorId) +
+                    ", PID: " +
+                    std::to_string(newGlassesInfo.productId) + ")", LogLevel::INFO);
+
+                glassesList.push_back(newGlassesInfo);
             }
-
-            GLASSES_INFO deviceInfo;
-            deviceInfo.hid_path = currentDevice->path ? currentDevice->path : "";
-            deviceInfo.vendorId = currentDevice->vendor_id;
-            deviceInfo.productId = currentDevice->product_id;
-            deviceInfo.serialNumber = wcharToString(currentDevice->serial_number);
-            deviceInfo.manufacturer = wcharToString(currentDevice->manufacturer_string);
-            deviceInfo.product = wcharToString(currentDevice->product_string);
-
-            Utils::log(
-                "找到HID设备: " + deviceInfo.product + " (VID: " + std::to_string(deviceInfo.vendorId) + ", PID: " +
-                std::to_string(deviceInfo.productId) + ")", LogLevel::INFO);
-
-            // Add interfaces to the device info
-            deviceInfo.interfaces = DevicesHelper::enumerateDeviceInterfaces(
-                currentDevice->vendor_id, currentDevice->product_id);
-
-            glassesList.push_back(deviceInfo);
-
-            // Move to the next device in the list
             currentDevice = currentDevice->next;
         }
 
@@ -80,48 +88,44 @@ std::vector<GLASSES_INFO> DevicesHelper::enumerateHidDevices(bool filterByVidPid
     if (hid_exit() != 0) {
         Utils::log("无法关闭HID库", LogLevel::WARNING);
     }
-
     return glassesList;
 }
 
-std::vector<INTERFACE_INFO> DevicesHelper::enumerateDeviceInterfaces(uint16_t vendorId, uint16_t productId) {
-    std::vector<INTERFACE_INFO> interfaces;
-    // Initialize the HIDAPI library
-    if (hid_init() != 0) {
-        Utils::log("无法初始化HID库", LogLevel::ERROR);
-        return interfaces;
+INTERFACE_INFO DevicesHelper::getValidHidInterface(const std::vector<INTERFACE_INFO> &interfaces) {
+    //向每一个接口发送一条v消息
+    for (auto &interface: interfaces) {
+        const auto nonConstInterface = const_cast<INTERFACE_INFO *>(&interface);
+        //打开设备
+        nonConstInterface->open();
+        // // 发送命令
+        // if (sendCommandAsync(&interface, "v")) {
+        //     Utils::log("命令发送成功", LogLevel::SUCCESS);
+        // } else {
+        //     Utils::log("命令发送失败", LogLevel::ERROR);
+        //     continue;
+        // }
+        //使用异步方式发送命令
+        sendCommandAsync(nonConstInterface, "v", [](bool result) {
+            if (result) {
+                Utils::log("命令发送成功", LogLevel::SUCCESS);
+            } else {
+                Utils::log("命令发送失败", LogLevel::ERROR);
+            }
+        });
     }
-
-    // Enumerate all HID devices
-    struct hid_device_info *deviceList = hid_enumerate(vendorId, productId);
-    struct hid_device_info *currentDevice = deviceList;
-
-    while (currentDevice) {
-        // Open HID device
-        hid_device *hidDevice = hid_open(currentDevice->vendor_id, currentDevice->product_id, nullptr);
-        if (hidDevice) {
-            INTERFACE_INFO interfaceInfo;
-            interfaceInfo.interface_number = currentDevice->interface_number;
-            interfaceInfo.is_connected = true;
-            interfaceInfo.original_hid_device = hidDevice;
-            interfaces.push_back(interfaceInfo);
-
-            Utils::log("发现子设备: Interface = " + std::to_string(interfaceInfo.interface_number), LogLevel::INFO);
-        } else {
-            Utils::log("无法打开设备，Interface = " + std::to_string(currentDevice->interface_number), LogLevel::WARNING);
+    // 等待1秒钟
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //检查所有接口上收到的消息列表,如果最后一条是0xFD开头的消息,则这个接口就是有效的用于通讯的接口
+    for (const auto &interface: interfaces) {
+        // 检查最后一条消息是否以0xFD开头
+        if (!interface.received_messages.empty() && !interface.received_messages.back().empty() &&
+            interface.received_messages.back()[0] == 0xFD) {
+            Utils::log("找到有效的通讯接口: " + std::to_string(interface.interface_number), LogLevel::SUCCESS);
+            return interface;
         }
-
-        // Move to the next device in the list
-        currentDevice = currentDevice->next;
     }
-
-    // Free the device list allocated by HIDAPI
-    hid_free_enumeration(deviceList);
-
-    // Finalize HIDAPI
-    hid_exit();
-
-    return interfaces;
+    Utils::log("没有找到有效的通讯接口", LogLevel::ERROR);
+    return INTERFACE_INFO{};
 }
 
 /**
@@ -157,7 +161,8 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
 
             // 方式2: 尝试使用sendFeatureReport
             try {
-                if (const bool result = hid_send_feature_report(interface->original_hid_device, data.data(), data.size())) {
+                if (const bool result = hid_send_feature_report(interface->original_hid_device, data.data(),
+                                                                data.size())) {
                     Utils::log("命令已使用sendFeatureReport发送", LogLevel::SUCCESS);
                     // 输出result
                     Utils::log("sendFeatureReport返回值: " + std::to_string(result), LogLevel::INFO);
@@ -177,6 +182,7 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
     }
 }
 
+
 /**
  * 发送命令到眼镜设备（字符串版本）
  * @param interface
@@ -190,3 +196,42 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::stri
     // 将字符串转换为字节数组并发送
     return sendCommand(interface, CommandHelper::strToPayload(command));
 }
+
+
+/**
+ * 异步发送命令到眼镜设备
+ * @param interface - 设备接口
+ * @param command - 命令数据
+ * @param callback - 命令发送完成后的回调函数，参数为是否发送成功
+ */
+void DevicesHelper::sendCommandAsync(const INTERFACE_INFO *interface, const std::vector<uint8_t> &command,
+                                     std::function<void(bool)> callback) {
+    // 使用单独的线程异步发送命令
+    std::thread([interface, command, callback]() {
+        try {
+            bool result = sendCommand(interface, command);
+            // 调用回调函数传递结果
+            if (callback) {
+                callback(result);
+            }
+        } catch (const std::exception &error) {
+            Utils::log(std::string("异步发送命令错误: ") + error.what(), LogLevel::ERROR);
+            if (callback) {
+                callback(false);
+            }
+        }
+    }).detach(); // 使用detach分离线程
+}
+
+/**
+ * 异步发送命令到眼镜设备（字符串版本）
+ * @param interface - 设备接口
+ * @param command - 命令字符串
+ * @param callback - 命令发送完成后的回调函数，参数为是否发送成功
+ */
+void DevicesHelper::sendCommandAsync(const INTERFACE_INFO *interface, const std::string &command,
+                                     const std::function<void(bool)> &callback) {
+    // 将字符串转换为字节数组并发送
+    sendCommandAsync(interface, CommandHelper::strToPayload(command), callback);
+}
+

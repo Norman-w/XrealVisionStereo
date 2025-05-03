@@ -34,6 +34,8 @@ public:
      * @param level - 日志级别
      */
     static void log(const std::string& message, LogLevel level = LogLevel::INFO);
+
+    static std::string bytesToHex(const std::vector<uint8_t> & vector);
 };
 
 
