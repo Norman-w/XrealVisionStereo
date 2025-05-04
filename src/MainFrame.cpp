@@ -2,6 +2,7 @@
 #include "MainFrame.h"
 #include <wx/sizer.h>
 #include <wx/menu.h> // Include for menu
+#include <wx/accel.h> // 添加加速器表支持
 #include <cstdio> // Include for fprintf/stderr/stdout
 
 // --- Add required headers for FS Handler ---
@@ -143,6 +144,26 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     // 在macOS上隐藏标题栏和工具栏
     SetWindowVariant(wxWINDOW_VARIANT_SMALL);
     SetExtraStyle(GetExtraStyle() | wxFRAME_NO_TASKBAR);
+    #endif
+
+    // 设置键盘加速器 - 为Command+Q创建退出快捷键
+    wxAcceleratorEntry entries[1];
+    entries[0].Set(wxACCEL_CMD, 'Q', wxID_EXIT);
+    wxAcceleratorTable accel(1, entries);
+    SetAcceleratorTable(accel);
+    
+    // 创建隐藏菜单以支持加速器
+    wxMenu *fileMenu = new wxMenu;
+    fileMenu->Append(wxID_EXIT, wxT("退出\tCtrl+Q"));
+    
+    wxMenuBar *menuBar = new wxMenuBar;
+    menuBar->Append(fileMenu, wxT("文件"));
+    SetMenuBar(menuBar);
+    
+    // 在macOS上隐藏菜单栏，但保留其功能
+    #ifdef __WXOSX__
+    // 不使用不存在的MacAutoMenuBar方法，改为隐藏窗口样式
+    SetWindowStyleFlag(GetWindowStyleFlag() | wxSTAY_ON_TOP);
     #endif
 
     // 记录窗口初始尺寸
@@ -288,10 +309,16 @@ void MainFrame::OnCharHook(wxKeyEvent& event) {
     int keyCode = event.GetKeyCode();
     long timestamp = event.GetTimestamp();
     
+    fprintf(stderr, "键盘钩子事件: 代码=%d, Command=%d, Control=%d, Alt=%d, Shift=%d\n", 
+            keyCode, (int)event.CmdDown(), (int)event.ControlDown(), 
+            (int)event.AltDown(), (int)event.ShiftDown());
+    
     // 检测Command+Q (macOS退出快捷键)
     if (keyCode == 'Q' && event.CmdDown()) {
         fprintf(stderr, "捕获到Command+Q组合键，正在退出应用...\n");
-        Close(true);
+        wxCommandEvent quitEvent(wxEVT_MENU, wxID_EXIT);
+        quitEvent.SetEventObject(this);
+        ProcessEvent(quitEvent);
         return;
     }
     
@@ -340,6 +367,7 @@ void MainFrame::LogToWebView(const wxString& message) {
 
 // Quit Handler
 void MainFrame::OnQuit(wxCommandEvent& event) {
+    fprintf(stderr, "退出命令已接收，关闭应用程序...\n");
     LogToWebView("[C++ QUIT] Quit command received.");
     Close(true); // true forces closing the frame
 }
