@@ -26,6 +26,12 @@ public:
      * @return - 断开是否成功
      */
     static bool disconnectGlasses();
+    
+    /**
+     * 恢复到2D模式并断开连接 - 用于应用退出时
+     * @return - 操作是否成功
+     */
+    static bool restoreTo2DMode();
 
     /**
      * 检查设备是否已连接

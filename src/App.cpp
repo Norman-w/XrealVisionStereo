@@ -113,16 +113,21 @@ bool App::OnInit() {
 }
 
 int App::OnExit() {
+    // 首先将眼镜切换回2D模式
+    try {
+        fprintf(stderr, "正在尝试将眼镜切换回2D模式...\n");
+        Index::restoreTo2DMode(); // 切换回2D模式并断开连接
+    } catch (const std::exception& e) {
+        fwprintf(stderr, L"切换眼镜模式时发生错误: %s\n", e.what());
+    }
+    
+    // 恢复原始显示模式
     if (originalDisplayMode) {
-        // Use fprintf for direct console output in Chinese
-        // Corrected fprintf call
-        fprintf(stderr, "正在尝试恢复原始显示模式...\n"); // Newline inside quotes
+        fprintf(stderr, "正在尝试恢复原始显示模式...\n");
 
         CGError restoreError = ScreenResolution::restoreDisplayMode(originalDisplayMode);
         if (restoreError != ::kCGErrorSuccess) {
-            // Print error to stderr in Chinese
-            // Corrected fwprintf call
-            fwprintf(stderr, L"错误：无法恢复原始显示模式 (错误代码: %d)。显示分辨率可能保持不变。\n", restoreError); // Newline inside quotes
+            fwprintf(stderr, L"错误：无法恢复原始显示模式 (错误代码: %d)。显示分辨率可能保持不变。\n", restoreError);
         }
         originalDisplayMode = nullptr;
     }

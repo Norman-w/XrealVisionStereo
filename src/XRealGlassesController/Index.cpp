@@ -130,3 +130,37 @@ bool Index::switchMode(const bool mode3D) const {
     
     return result;
 }
+
+/**
+ * 恢复到2D模式并断开连接
+ * @return - 操作是否成功
+ */
+bool Index::restoreTo2DMode() {
+    bool success = true;
+    
+    // 检查是否有连接的设备
+    if (current_connected_device_interface) {
+        // 创建临时索引对象用于调用实例方法
+        Index tempIndex;
+        
+        // 尝试切换回2D模式
+        if (!tempIndex.switchMode(false)) {
+            Utils::log("无法将眼镜切换回2D模式", LogLevel::ERROR);
+            success = false;
+        } else {
+            Utils::log("已将眼镜成功切换回2D模式", LogLevel::SUCCESS);
+        }
+        
+        // 无论2D模式设置是否成功，都尝试断开连接
+        if (!disconnectGlasses()) {
+            Utils::log("无法正常断开眼镜连接", LogLevel::ERROR);
+            success = false;
+        } else {
+            Utils::log("已断开眼镜连接", LogLevel::SUCCESS);
+        }
+    } else {
+        Utils::log("没有连接的眼镜设备，无需还原", LogLevel::INFO);
+    }
+    
+    return success;
+}
