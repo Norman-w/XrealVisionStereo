@@ -30,6 +30,17 @@ public:
 
     //眼镜的所有接口列表
     std::vector<INTERFACE_INFO> interfaces;
+    
+    // 构造函数，初始化指针为nullptr
+    GLASSES_INFO() : communicate_interface(nullptr) {}
+    
+    // 析构函数，确保释放接口指针
+    ~GLASSES_INFO() {
+        if (communicate_interface) {
+            delete communicate_interface;
+            communicate_interface = nullptr;
+        }
+    }
 };
 
 

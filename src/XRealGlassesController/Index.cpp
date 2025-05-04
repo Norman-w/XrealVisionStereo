@@ -53,12 +53,24 @@ bool Index::connectGlasses() {
         return false;
     }
 
-    // 更新眼镜的有效通讯接口指针
-    auto validateInterface = new INTERFACE_INFO(
-        DevicesHelper::getValidHidInterface(selectedDevice.interfaces));
-    selectedDevice.communicate_interface = validateInterface;
-    Utils::log("找到有效的通讯接口", LogLevel::INFO);
-    current_connected_device_interface = selectedDevice.communicate_interface;
+    // 获取有效通讯接口（这个接口已经是打开状态）
+    INTERFACE_INFO validInterface = DevicesHelper::getValidHidInterface(selectedDevice.interfaces);
+    
+    // 确保找到了有效接口
+    if (!validInterface.is_connected || !validInterface.original_hid_device()) {
+        Utils::log("无法获取有效的通讯接口", LogLevel::ERROR);
+        return false;
+    }
+    
+    // 创建新的INTERFACE_INFO实例并设置为当前通讯接口
+    // 注意：不要关闭validInterface，因为我们要继续使用它
+    if (current_connected_device_interface) {
+        // 如果之前有连接，先断开
+        disconnectGlasses();
+    }
+    
+    current_connected_device_interface = new INTERFACE_INFO(validInterface);
+    Utils::log("设备连接成功", LogLevel::SUCCESS);
     return true;
 }
 
@@ -69,8 +81,11 @@ bool Index::disconnectGlasses() {
     }
 
     try {
-        // Close the HID device connection
-        hid_close(current_connected_device_interface->original_hid_device);
+        // 先关闭连接
+        current_connected_device_interface->close();
+        
+        // 释放指针
+        delete current_connected_device_interface;
         current_connected_device_interface = nullptr;
 
         Utils::log("Successfully disconnected the device.", LogLevel::SUCCESS);

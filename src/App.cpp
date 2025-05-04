@@ -22,8 +22,6 @@ bool App::OnInit() {
         wxLogError("设置眼镜分辨率失败");
         return false;
     }
-    wxLogInfo("设置眼镜分辨率成功");
-    return true;
     // 1. Save current display mode (Keep this, restore on exit is good practice)
     originalDisplayMode = ScreenResolution::saveCurrentDisplayMode();
     if (!originalDisplayMode) {
@@ -75,10 +73,19 @@ bool App::OnInit() {
     }
     */
 
+    //定义位置为0,0, 定义大小为3840,1080
+    auto formPos = wxPoint(0, 0);
+    auto formSize = wxSize(3840, 1080);
+
     // 3. Create the main application window
-    MainFrame *frame = new MainFrame("Xreal Vision Stereo Viewer", wxDefaultPosition, wxDefaultSize);
+    MainFrame *frame = new MainFrame("Xreal Vision Stereo Viewer", formPos, formSize);
     // Use DefaultSize for fullscreen
     frame->Show(true);
+
+    //将应用挪到前台显示
+    frame->Raise();
+    frame->SetWindowStyle(wxSTAY_ON_TOP);
+    frame->SetFocus();
 
     // 4. Prepare to Load the HTML file
     wxString resourceDir = wxStandardPaths::Get().GetResourcesDir();

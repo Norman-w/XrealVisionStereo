@@ -25,7 +25,7 @@ public:
      * 断开XReal眼镜连接
      * @return - 断开是否成功
      */
-    bool disconnectGlasses();
+    static bool disconnectGlasses();
 
     /**
      * 检查设备是否已连接
