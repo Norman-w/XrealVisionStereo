@@ -76,6 +76,8 @@ void Utils::log(const std::string& message, LogLevel level) {
         case LogLevel::ERROR:
             prefix = "[ERROR] ";
         break;
+        default:
+            break;
     }
 
     // 输出日志

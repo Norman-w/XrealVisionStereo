@@ -21,22 +21,9 @@ public:
     //================ 设备连接部分 ================//
     /**
      * 遍历所有计算机的HID设备
-     * @param filterByVidPid - 是否按VID/PID过滤XREAL设备
      * @return - 设备信息列表
      */
     static std::vector<GLASSES_INFO> enumerateClassesByHid();
-
-    /**
-     * 打开设备
-     * @param devicePath - 设备路径
-     * @return - 是否成功打开
-     */
-    bool openDevice(const std::string& devicePath);
-
-    /**
-     * 关闭设备
-     */
-    void closeDevice();
 
     /**
      * 测试设备通讯
@@ -44,26 +31,6 @@ public:
      * @return - 有效接口路径列表
      */
     static INTERFACE_INFO getValidHidInterface(const std::vector<INTERFACE_INFO>& interfaces);
-
-    /**
-     * 启动接收消息监听
-     * @param devicePaths - 要监听的设备路径列表
-     */
-    void startListening(const std::vector<std::string>& devicePaths);
-
-    /**
-     * 停止监听
-     */
-    void stopListening();
-
-    /**
-     * 读取设备数据的线程函数
-     * @param devicePath - 设备路径
-     */
-    void readDeviceData(const std::string& devicePath);
-    //========================================//
-
-
     /**
      * 发送命令到眼镜设备
      * @param interface 要使用哪个接口发送

@@ -175,6 +175,7 @@ INTERFACE_INFO DevicesHelper::getValidHidInterface(const std::vector<INTERFACE_I
 
 /**
  * 发送命令到眼镜设备（字节数组版本）
+ * @param interface
  * @param command - 命令数据
  * @return - 发送是否成功
  */
@@ -198,7 +199,7 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
         
         // 打印数据内容以便调试
         std::string hexData = "发送数据: ";
-        for (size_t i = 0; i < std::min(data.size(), size_t(32)); i++) {
+        for (size_t i = 0; i < std::min(data.size(), static_cast<size_t>(32)); i++) {
             char hexBuf[8];
             snprintf(hexBuf, sizeof(hexBuf), "%02X ", data[i]);
             hexData += hexBuf;

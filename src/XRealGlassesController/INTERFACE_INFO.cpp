@@ -118,7 +118,7 @@ void INTERFACE_INFO::startMessagePolling() {
                 //如果收到0xFD开头的消息,则日志输出
                 if (!message.empty() && message[0] == 0xFD) {
                     std::string hexData = "收到数据: ";
-                    for (size_t i = 0; i < std::min(message.size(), size_t(32)); i++) {
+                    for (size_t i = 0; i < std::min(message.size(), static_cast<size_t>(32)); i++) {
                         char hexBuf[8];
                         snprintf(hexBuf, sizeof(hexBuf), "%02X ", message[i]);
                         hexData += hexBuf;

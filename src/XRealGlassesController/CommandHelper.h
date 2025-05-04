@@ -6,8 +6,6 @@
 #define COMMANDHELPER_H
 #include <vector>
 
-#include "LOG_LEVEL.h"
-
 
 class CommandHelper {
 

@@ -32,8 +32,9 @@ public:
     std::vector<INTERFACE_INFO> interfaces;
     
     // 构造函数，初始化指针为nullptr
-    GLASSES_INFO() : communicate_interface(nullptr) {}
-    
+    GLASSES_INFO() : vendorId(0), productId(0), communicate_interface(nullptr) {
+    }
+
     // 析构函数，确保释放接口指针
     ~GLASSES_INFO() {
         if (communicate_interface) {

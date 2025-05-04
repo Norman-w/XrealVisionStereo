@@ -37,13 +37,13 @@ public:
      * 检查设备是否已连接
      * @return - 设备是否已连接
      */
-    bool isConnected() const;
+    static bool isConnected();
     /**
      * 切换眼镜显示模式
      * @param mode3D - true为3D模式，false为2D模式
      * @return - 切换是否成功
      */
-    bool switchMode(bool mode3D) const;
+    static bool switchMode(bool mode3D);
 };
 
 

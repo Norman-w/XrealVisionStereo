@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <hidapi/hidapi.h>
-#include <memory>
 #include <atomic>
 
 class INTERFACE_INFO {
@@ -12,8 +11,8 @@ private:
     struct DeviceResource {
         hid_device* device;
         std::atomic<int> refCount;
-        
-        DeviceResource(hid_device* dev) : device(dev), refCount(1) {}
+
+        explicit DeviceResource(hid_device* dev) : device(dev), refCount(1) {}
         ~DeviceResource() {
             if (device) {
                 hid_close(device);
@@ -32,7 +31,7 @@ public:
     std::string hid_path;
     
     // 访问原始设备指针的属性（只读）
-    hid_device* original_hid_device() const {
+    [[nodiscard]] hid_device* original_hid_device() const {
         return deviceResource ? deviceResource->device : nullptr;
     }
     

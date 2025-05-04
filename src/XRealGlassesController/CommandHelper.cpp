@@ -47,8 +47,8 @@ std::vector<uint8_t> CommandHelper::buildCustomDisplayCommand(
     buffer[0] = 0xFD;  // 命令头标识
 
     // 设置随机序列号
-    // const uint32_t seqNum = Utils::generateRandomU32();
-    const uint32_t seqNum =  402284073;//Utils::generateRandomU32();
+    const uint32_t seqNum = Utils::generateRandomU32();
+    // const uint32_t seqNum =  402284073;//Utils::generateRandomU32();
     buffer[7] = seqNum & 0xFF;
     buffer[8] = (seqNum >> 8) & 0xFF;
     buffer[9] = (seqNum >> 16) & 0xFF;

@@ -9,23 +9,7 @@
 
 INTERFACE_INFO* Index::current_connected_device_interface = nullptr;
 
-Index::Index() {
-    // if (!isConnected()) {
-    //     log("设备未连接", LogLevel::INFO);
-    //     return true;
-    // }
-    //
-    // try {
-    //     // 关闭设备
-    //     device->close();
-    //     deviceOpened = false;
-    //     log("设备已断开连接", LogLevel::SUCCESS);
-    //     return true;
-    // } catch (const std::exception& e) {
-    //     log(std::string("断开设备异常: ") + e.what(), LogLevel::ERROR);
-    //     return false;
-    // }
-}
+Index::Index() = default;
 
 Index::~Index() {
     if (current_connected_device_interface) {
@@ -96,7 +80,7 @@ bool Index::disconnectGlasses() {
     }
 }
 
-bool Index::isConnected() const {
+bool Index::isConnected() {
     return current_connected_device_interface != nullptr;
 }
 
@@ -106,7 +90,7 @@ bool Index::isConnected() const {
  * @param mode3D - true为3D模式，false为2D模式
  * @return - 切换是否成功
  */
-bool Index::switchMode(const bool mode3D) const {
+bool Index::switchMode(const bool mode3D) {
     if (!current_connected_device_interface) {
         Utils::log("设备未连接，请先连接设备", LogLevel::ERROR);
         return false;
@@ -144,7 +128,7 @@ bool Index::restoreTo2DMode() {
         Index tempIndex;
         
         // 尝试切换回2D模式
-        if (!tempIndex.switchMode(false)) {
+        if (!Index::switchMode(false)) {
             Utils::log("无法将眼镜切换回2D模式", LogLevel::ERROR);
             success = false;
         } else {
