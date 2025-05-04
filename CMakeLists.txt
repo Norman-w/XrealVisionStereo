@@ -39,7 +39,6 @@ add_executable(${PROJECT_NAME}
         src/main.cpp
         src/App.h src/App.cpp
         src/MainFrame.h src/MainFrame.cpp
-        src/ScreenResolution.h src/ScreenResolution.mm
         src/XRealGlassesController/Utils.cpp
         src/XRealGlassesController/Utils.h
         src/XRealGlassesController/Index.cpp
