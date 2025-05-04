@@ -203,9 +203,11 @@ bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::vect
 bool DevicesHelper::sendCommand(const INTERFACE_INFO *interface, const std::string &command) {
     // 记录命令文本
     Utils::log(std::string("命令文本: ") + command, LogLevel::INFO);
-
+    auto payload = CommandHelper::strToPayload(command);
+    //第一个字节0xfd + 命令的全部字节
+    payload.insert(payload.begin(), 0xFD);
     // 将字符串转换为字节数组并发送
-    return sendCommand(interface, CommandHelper::strToPayload(command));
+    return sendCommand(interface, payload);
 }
 
 
@@ -242,7 +244,10 @@ void DevicesHelper::sendCommandAsync(const INTERFACE_INFO *interface, const std:
  */
 void DevicesHelper::sendCommandAsync(const INTERFACE_INFO *interface, const std::string &command,
                                      const std::function<void(bool)> &callback) {
+    auto payload = CommandHelper::strToPayload(command);
+    //第一个字节0xfd + 命令的全部字节
+    payload.insert(payload.begin(), 0xFD);
     // 将字符串转换为字节数组并发送
-    sendCommandAsync(interface, CommandHelper::strToPayload(command), callback);
+    sendCommandAsync(interface, payload, callback);
 }
 
