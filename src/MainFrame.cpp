@@ -127,55 +127,83 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_CHAR_HOOK(MainFrame::OnCharHook)
     EVT_KEY_DOWN(MainFrame::OnKeyDown)
     EVT_KEY_UP(MainFrame::OnKeyUp)
+    EVT_SIZE(MainFrame::OnSize)  // 添加大小变化处理
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
-    : wxFrame(nullptr, wxID_ANY, title, pos, size, wxDEFAULT_FRAME_STYLE | wxNO_BORDER /* Optional: No border for cleaner fullscreen */),
+    : wxFrame(nullptr, wxID_ANY, title, pos, size, 
+              wxFULL_REPAINT_ON_RESIZE | wxNO_BORDER), // 移除wxDEFAULT_FRAME_STYLE，使用更简洁的样式
       m_loadTimer(this, ID_LoadTimer)
 {
-    // --- Menu Bar Setup ---
-    wxMenu *menuFile = new wxMenu;
-    // Note: wxWidgets automatically maps standard IDs like wxID_EXIT
-    // to the platform's standard text and shortcut (Cmd+Q on macOS)
-    menuFile->Append(wxID_EXIT);
+    // 设置为真正的无边框窗口
+    SetWindowStyle(wxNO_BORDER | wxCLIP_CHILDREN);
+    
+    // 隐藏工具栏和菜单栏
+    #ifdef __WXOSX__
+    // 在macOS上隐藏标题栏和工具栏
+    SetWindowVariant(wxWINDOW_VARIANT_SMALL);
+    SetExtraStyle(GetExtraStyle() | wxFRAME_NO_TASKBAR);
+    #endif
 
-    wxMenuBar *menuBar = new wxMenuBar;
-    menuBar->Append(menuFile, "&File");
+    // 记录窗口初始尺寸
+    wxSize initSize = size;
+    fprintf(stderr, "初始窗口尺寸: %dx%d\n", initSize.GetWidth(), initSize.GetHeight());
 
-    SetMenuBar(menuBar);
-    // --- End Menu Bar Setup ---
-
-    // Create WebView
+    // 创建WebView (不需要菜单)
     #if wxUSE_WEBVIEW
     webView = wxWebView::New(this, wxID_ANY);
     if (webView) {
-        // Enable developer tools
-        webView->EnableContextMenu(true);
-        webView->EnableAccessToDevTools(true);
+        // 禁用右键菜单和开发者工具
+        webView->EnableContextMenu(false);
+        webView->EnableAccessToDevTools(false);
 
-        // --- Register the custom file system handler FIRST --- 
-        // Needs to be registered before LoadURL if the initial URL uses it,
-        // or before any script tries to fetch using the scheme.
+        // 注册自定义文件系统处理器
         webView->RegisterHandler(wxSharedPtr<wxWebViewHandler>(new AppBundleFSHandler("wxfs")));
-        LogToWebView(wxT("[REGISTER INFO] wxfs file system handler registered."));
-
+        
+        // 使用伸展性sizer确保WebView填满整个窗口
         wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-        sizer->Add(webView, 1, wxEXPAND);
+        sizer->Add(webView, 1, wxEXPAND | wxALL, 0);  // 比例为1，允许伸展，无边距
         SetSizer(sizer);
-        // Layout(); // Layout is handled by ShowFullScreen or later events
-
+        
+        // 应用sizer到窗口大小
+        SetMinSize(wxSize(640, 480));  // 设置最小尺寸防止过小
+        sizer->SetSizeHints(this);  // 确保sizer尺寸提示应用到窗口
+        
+        // 记录WebView初始尺寸
+        fprintf(stderr, "WebView初始尺寸: %dx%d\n", 
+                webView->GetSize().GetWidth(), webView->GetSize().GetHeight());
     } else {
-        // Corrected fprintf (newline inside quotes)
-        fprintf(stderr, "[错误] 无法创建 wxWebView 后端。\n");
+        fprintf(stderr, "[错误] 无法创建wxWebView后端\n");
     }
     #else
-    // Corrected fprintf (newline inside quotes)
-    fprintf(stderr, "[错误] 此 wxWidgets 构建未启用 wxWebView 支持。\n");
+    fprintf(stderr, "[错误] 此wxWidgets构建未启用wxWebView支持\n");
     #endif
-
-    // Maximize(); // Replaced by ShowFullScreen
-    ShowFullScreen(true, wxFULLSCREEN_ALL);
-    Layout(); // Ensure layout after fullscreen
+    
+    // 调整尺寸以适应屏幕
+    wxSize screenSize = wxGetDisplaySize();
+    int screenWidth = screenSize.GetWidth();
+    int screenHeight = screenSize.GetHeight();
+    
+    SetSize(0, 0, screenWidth, screenHeight);
+    Centre(wxBOTH);  // 确保居中
+    
+    // 立即应用布局
+    Layout();
+    
+    // 设置完全全屏模式
+    ShowFullScreen(true, wxFULLSCREEN_NOBORDER | wxFULLSCREEN_NOCAPTION | wxFULLSCREEN_ALL);
+    
+    // 记录全屏后的尺寸
+    fprintf(stderr, "全屏后窗口客户区尺寸: %dx%d\n", 
+            GetClientSize().GetWidth(), GetClientSize().GetHeight());
+            
+    // 全屏后强制更新WebView尺寸
+    if (webView) {
+        wxSize clientSize = GetClientSize();
+        webView->SetSize(0, 0, clientSize.GetWidth(), clientSize.GetHeight());
+    }
+    
+    Refresh(true);
 }
 
 MainFrame::~MainFrame() {
@@ -227,10 +255,23 @@ void MainFrame::OnWebViewNavigated(wxWebViewEvent& event) {
 }
 
 void MainFrame::OnWebViewLoaded(wxWebViewEvent& event) {
-    // Corrected fprintf (newline inside quotes)
     fprintf(stderr, "[信息] WebView 加载完成: URL='%s', Target='%s'\n",
             (const char*)event.GetURL().ToUTF8(),
             (const char*)event.GetTarget().ToUTF8());
+    
+    // 设置控件位置（填充整个窗口）
+    if (webView) {
+        wxSize clientSize = GetClientSize();
+        fprintf(stderr, "[信息] 加载完成后设置WebView尺寸: %dx%d\n", 
+                clientSize.GetWidth(), clientSize.GetHeight());
+        
+        // 确保WebView填满整个客户区域
+        webView->SetSize(0, 0, clientSize.GetWidth(), clientSize.GetHeight());
+        
+        // 强制布局刷新
+        Layout();
+        Refresh();
+    }
 }
 
 void MainFrame::OnWebViewError(wxWebViewEvent& event) {
@@ -246,8 +287,16 @@ void MainFrame::OnWebViewError(wxWebViewEvent& event) {
 void MainFrame::OnCharHook(wxKeyEvent& event) {
     int keyCode = event.GetKeyCode();
     long timestamp = event.GetTimestamp();
-    // fprintf(stderr, "[C++ DEBUG MainFrame CHAR_HOOK] CharHook: Code=%d, Timestamp=%ld\n", keyCode, timestamp);
-    LogToWebView(wxString::Format("[C++ HOOK] CharHook: Code=%d, Timestamp=%ld", keyCode, timestamp));
+    
+    // 检测Command+Q (macOS退出快捷键)
+    if (keyCode == 'Q' && event.CmdDown()) {
+        fprintf(stderr, "捕获到Command+Q组合键，正在退出应用...\n");
+        Close(true);
+        return;
+    }
+    
+    // 正常处理其他按键事件
+    //LogToWebView(wxString::Format("[C++ HOOK] CharHook: Code=%d, Timestamp=%ld", keyCode, timestamp));
     event.Skip(); // Allow event to propagate
 }
 
@@ -297,4 +346,19 @@ void MainFrame::OnQuit(wxCommandEvent& event) {
 
 void MainFrame::OnClose(wxCloseEvent& event) {
     Destroy();
+}
+
+// 添加OnSize函数实现
+void MainFrame::OnSize(wxSizeEvent& event) {
+    // 获取窗口客户区大小
+    wxSize size = GetClientSize();
+    fprintf(stderr, "窗口大小变化: %dx%d\n", size.GetWidth(), size.GetHeight());
+    
+    // 确保WebView填满整个窗口
+    if (webView) {
+        webView->SetSize(0, 0, size.GetWidth(), size.GetHeight());
+    }
+    
+    // 调用默认处理
+    event.Skip();
 } 

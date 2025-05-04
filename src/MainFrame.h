@@ -26,6 +26,7 @@ private:
     void OnCharHook(wxKeyEvent& event);
     void OnKeyDown(wxKeyEvent& event);
     void OnKeyUp(wxKeyEvent& event);
+    void OnSize(wxSizeEvent& event);
 
     void LogToWebView(const wxString& message);
 

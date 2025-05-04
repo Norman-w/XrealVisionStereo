@@ -4,90 +4,109 @@
 #include <wx/stdpaths.h>
 #include <wx/filename.h>
 #include <wx/msgdlg.h>
+#include <wx/utils.h> // 添加这个头文件用于wxExecute和wxMilliSleep
 #include <cstdio> // Include for fprintf, stderr
+#include <unistd.h> // 添加这个头文件用于getpid
 
 #include "XRealGlassesController/Index.h"
+
+// macOS特定头文件
+#ifdef __WXOSX__
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+
+// 定义事件表
+BEGIN_EVENT_TABLE(App, wxApp)
+    EVT_TIMER(wxID_ANY, App::OnResolutionCheckTimer)
+END_EVENT_TABLE()
 
 bool App::OnInit() {
     if (!wxApp::OnInit())
         return false;
-    //尝试连接到眼镜
+        
+    // 尝试连接到眼镜
     auto xrealGlassesController = new Index();
     if (!xrealGlassesController->connectGlasses()) {
         wxLogError("连接到眼镜失败");
         return false;
     }
-    //设置眼镜的分辨率(发送命令)
-    if (!xrealGlassesController->switchMode(true)) {
-        wxLogError("设置眼镜分辨率失败");
-        return false;
-    }
-    // 1. Save current display mode (Keep this, restore on exit is good practice)
+    
+    // 保存当前显示模式（之后可能需要恢复）
     originalDisplayMode = ScreenResolution::saveCurrentDisplayMode();
     if (!originalDisplayMode) {
         wxLogError("Failed to save the original display mode.");
     }
-
-    // 2. Set desired display mode (REMOVED - Handled by external device/settings)
-    /*
-    size_t targetWidth = 3840;
-    size_t targetHeight = 1080;
-    CGError setModeError = ScreenResolution::setDisplayMode(targetWidth, targetHeight);
-
-    if (setModeError != ::kCGErrorSuccess) {
-        wxString errorMsg = wxString::Format("Failed to set display mode to %zux%zu (Error code: %d).\n", targetWidth, targetHeight, setModeError);
-        wxString detailedMsg = errorMsg;
-
-        // Convert wxString messages to C-style strings for fprintf/fwprintf
-        // Note: Using fwprintf with L prefix for wide characters (better for potential Unicode/Chinese)
-
-        // Check if the error might be related to permissions
-        if (setModeError == ::kCGErrorCannotComplete || setModeError == ::kCGErrorFailure) {
-             // detailedMsg += "\nThis application needs 'Screen Recording' permission... ";
-             // Print detailed message to stderr
-             fwprintf(stderr, L"错误：无法设置显示模式 %zux%zu (错误代码: %d)。\n", targetWidth, targetHeight, setModeError);
-             fwprintf(stderr, L"原因：应用可能需要"屏幕录制"权限来更改显示设置。请在"系统设置"->"隐私与安全性"->"屏幕录制"中授予权限，或确保硬件支持此分辨率。
-");
-             // Ask user to open settings via console? Less intuitive.
-             // fprintf(stderr, "需要打开系统设置吗? (需要手动操作)\n");
-
-             // int response = wxMessageBox(detailedMsg, "Permission Required", wxOK | wxCANCEL | wxICON_WARNING | wxCENTRE);
-             // if (response == wxOK) {
-             //       ScreenResolution::openPrivacyScreenRecordingSettings();
-             // }
-        } else {
-             // For other errors, just print basic message to stderr
-             // wxMessageBox(errorMsg, "Display Mode Error", wxOK | wxICON_ERROR | wxCENTRE);
-             fwprintf(stderr, L"错误：无法设置显示模式 %zux%zu (错误代码: %d)。\n", targetWidth, targetHeight, setModeError);
-        }
-        // wxLogError(errorMsg); // Replaced by fprintf/fwprintf
-
-        if (originalDisplayMode && setModeError != ::kCGErrorSuccess) {
-             CGError restoreError = ScreenResolution::restoreDisplayMode(originalDisplayMode);
-             if (restoreError != ::kCGErrorSuccess) {
-                 // wxLogError("Attempted immediate restore...", restoreError);
-                 fwprintf(stderr, L"尝试立即恢复原始模式失败 (错误代码: %d)。\n", restoreError);
-             }
-             originalDisplayMode = nullptr;
-        }
+    
+    // 设置眼镜的分辨率(发送命令)
+    if (!xrealGlassesController->switchMode(true)) {
+        wxLogError("设置眼镜分辨率失败");
+        return false;
     }
-    */
+    
+    // 启动定时器，延迟检查分辨率是否正确
+    fprintf(stderr, "将在5秒后检查分辨率...\n");
+    m_resolutionCheckTimer.SetOwner(this);
+    m_resolutionCheckTimer.Start(1000); // 每秒检查一次，最多检查5次
+    
+    return true;
+}
 
-    //定义位置为0,0, 定义大小为3840,1080
+void App::OnResolutionCheckTimer(wxTimerEvent& event) {
+    m_resolutionCheckCount++;
+    
+    // 获取当前屏幕分辨率
+    wxSize screenSize = wxGetDisplaySize();
+    fprintf(stderr, "第%d次检查分辨率: %dx%d\n", 
+            m_resolutionCheckCount, screenSize.GetWidth(), screenSize.GetHeight());
+    
+    // 如果达到预期分辨率（宽度等于或接近3840），创建主窗口
+    if (screenSize.GetWidth() >= 3800) {
+        fprintf(stderr, "检测到预期分辨率，创建主窗口...\n");
+        m_resolutionCheckTimer.Stop();
+        CreateMainWindow();
+        return;
+    }
+    
+    // 达到最大检查次数（5次），仍然没有正确的分辨率，恢复并退出
+    if (m_resolutionCheckCount >= 5) {
+        fprintf(stderr, "分辨率检查超时，恢复2D模式并退出...\n");
+        m_resolutionCheckTimer.Stop();
+        RestoreAndExit();
+    }
+}
+
+bool App::CreateMainWindow() {
+    // 获取当前屏幕分辨率
+    wxSize screenSize = wxGetDisplaySize();
+    fprintf(stderr, "当前屏幕分辨率: %dx%d\n", screenSize.GetWidth(), screenSize.GetHeight());
+    
+    // 3D模式下，窗口应该填满整个屏幕
     auto formPos = wxPoint(0, 0);
-    auto formSize = wxSize(3840, 1080);
-
-    // 3. Create the main application window
+    auto formSize = screenSize;
+    
+    // 创建主窗口
     MainFrame *frame = new MainFrame("Xreal Vision Stereo Viewer", formPos, formSize);
-    // Use DefaultSize for fullscreen
+    SetTopWindow(frame);
+    
+    // 显示窗口
     frame->Show(true);
-
-    //将应用挪到前台显示
+    
+    // 确保全屏显示
+    frame->ShowFullScreen(true, wxFULLSCREEN_ALL);
+    
+    // 强制前台显示
     frame->Raise();
-    frame->SetWindowStyle(wxSTAY_ON_TOP);
     frame->SetFocus();
+    
+    // 在macOS上特别处理前台问题
+#ifdef __WXOSX__
+    // 使用API切换到前台
+    ProcessSerialNumber psn = { 0, kCurrentProcess };
+    TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+    SetFrontProcess(&psn);
+#endif
 
-    // 4. Prepare to Load the HTML file
+    // 准备加载HTML文件
     wxString resourceDir = wxStandardPaths::Get().GetResourcesDir();
     if (resourceDir.IsEmpty()) {
         wxLogError("Could not get resources directory path.");
@@ -108,8 +127,25 @@ bool App::OnInit() {
     }
     wxString url = wxString("file://") + htmlPath.GetFullPath();
     frame->PrepareLoadUrl(url);
-
+    
     return true;
+}
+
+void App::RestoreAndExit() {
+    // 恢复2D模式
+    fprintf(stderr, "恢复2D模式...\n");
+    Index::restoreTo2DMode();
+    
+    // 恢复原始分辨率
+    if (originalDisplayMode) {
+        fprintf(stderr, "恢复原始分辨率...\n");
+        ScreenResolution::restoreDisplayMode(originalDisplayMode);
+        originalDisplayMode = nullptr;
+    }
+    
+    // 退出应用
+    fprintf(stderr, "退出应用...\n");
+    ExitMainLoop();
 }
 
 int App::OnExit() {
