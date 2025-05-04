@@ -1,6 +1,5 @@
 #include "App.h"
 #include "MainFrame.h"
-#include "ScreenResolution.h"
 #include <wx/stdpaths.h>
 #include <wx/filename.h>
 #include <wx/msgdlg.h>
@@ -30,13 +29,7 @@ bool App::OnInit() {
         wxLogError("连接到眼镜失败");
         return false;
     }
-    
-    // 保存当前显示模式（之后可能需要恢复）
-    originalDisplayMode = ScreenResolution::saveCurrentDisplayMode();
-    if (!originalDisplayMode) {
-        wxLogError("Failed to save the original display mode.");
-    }
-    
+
     // 设置眼镜的分辨率(发送命令)
     if (!xrealGlassesController->switchMode(true)) {
         wxLogError("设置眼镜分辨率失败");
@@ -135,13 +128,7 @@ void App::RestoreAndExit() {
     // 恢复2D模式
     fprintf(stderr, "恢复2D模式...\n");
     Index::restoreTo2DMode();
-    
-    // 恢复原始分辨率
-    if (originalDisplayMode) {
-        fprintf(stderr, "恢复原始分辨率...\n");
-        ScreenResolution::restoreDisplayMode(originalDisplayMode);
-        originalDisplayMode = nullptr;
-    }
+
     
     // 退出应用
     fprintf(stderr, "退出应用...\n");
@@ -161,10 +148,6 @@ int App::OnExit() {
     if (originalDisplayMode) {
         fprintf(stderr, "正在尝试恢复原始显示模式...\n");
 
-        CGError restoreError = ScreenResolution::restoreDisplayMode(originalDisplayMode);
-        if (restoreError != ::kCGErrorSuccess) {
-            fwprintf(stderr, L"错误：无法恢复原始显示模式 (错误代码: %d)。显示分辨率可能保持不变。\n", restoreError);
-        }
         originalDisplayMode = nullptr;
     }
     return wxApp::OnExit();
