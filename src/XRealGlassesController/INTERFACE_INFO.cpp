@@ -52,6 +52,17 @@ void INTERFACE_INFO::startMessagePolling() {
                 received_messages.push_back(message);
                 // 处理消息
                 // Utils::log("收到消息: " + Utils::bytesToHex(message), LogLevel::INFO);
+
+                //如果收到0xFD开头的消息,则日志输出
+                if (message[0] == 0xFD) {
+                    std::string hexData = "收到数据: ";
+                    for (size_t i = 0; i < std::min(message.size(), size_t(32)); i++) {
+                        char hexBuf[8];
+                        snprintf(hexBuf, sizeof(hexBuf), "%02X ", message[i]);
+                        hexData += hexBuf;
+                    }
+                    Utils::log(hexData, LogLevel::INFO);
+                }
             }
         }
     }).detach();
