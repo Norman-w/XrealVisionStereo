@@ -160,7 +160,7 @@ function createCluster(spawnX: number): THREE.Group {
 				initialEmissiveIntensity: initialIntensity, // This will scale the base color
 				minBrightnessFactor: 0.5,
 				maxBrightnessFactor: 1.5,
-				baseColorForBrightness: null // Placeholder, will be set below
+				baseColorForBrightness: null as THREE.Color | null // Placeholder, will be set below
 			};
 
 		} else {
