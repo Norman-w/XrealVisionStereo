@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Manual Stereo View</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; }
+        /* Styles for debug overlays */
+        .debug-overlay {
+            position: absolute;
+            top: 0;
+            height: 100vh; /* Full height */
+            width: 50vw; /* Half width */
+            border: 2px solid yellow;
+            box-sizing: border-box; /* Include border in width/height */
+            pointer-events: none; /* Allow clicks to pass through */
+            color: yellow;
+            font-size: 24px;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align text to top */
+            padding-top: 20px;
+        }
+        #left-eye-overlay {
+            left: 0;
+        }
+        #right-eye-overlay {
+            left: 50vw; /* Start at halfway point */
+        }
+        /* Styles for C++ Log Overlay */
+        #cpp-log-overlay {
+            position: fixed; /* Fixed position */
+            bottom: 10px;
+            left: 10px;
+            width: calc(100vw - 20px); /* Full width minus padding */
+            height: 150px; /* Fixed height */
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black */
+            border: 1px solid #555;
+            color: #0f0; /* Green text */
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: scroll; /* Enable vertical scrolling */
+            padding: 5px;
+            box-sizing: border-box;
+            z-index: 100; /* Ensure it's on top */
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+    </style>
+</head>
+<body>
+    <!-- Debug Overlays -->
+    <div id="left-eye-overlay" class="debug-overlay">Left Eye</div>
+    <div id="right-eye-overlay" class="debug-overlay">Right Eye</div>
+
+    <!-- C++ Log Overlay -->
+    <div id="cpp-log-overlay">[C++ Logs]<br></div>
+
+    <!-- Three.js canvas will be appended here by the script -->
+
+    <!-- Use importmap for simpler Three.js loading if desired, or standard script tag -->
+    <!-- <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+            }
+        }
+    </script> -->
+
+    <!-- 加载Three.js -->
+    <script src="three.min.js"></script>
+    
+    <!-- 加载着色器代码，必须放在主脚本之前 -->
+    <script src="shaders.js"></script>
+
+    <script>
+        console.log("Script block start");
+
+        let scene, camera, renderer, cube;
+        let leftCamera, rightCamera; // Manual cameras
+        const eyeSep = 0.06;         // Eye separation distance
+        // let stats; // Remove stats variable
+
+        // --- Variables for 3D FPS Counter ---
+        let fpsTextSprite;
+        let fpsCanvas, fpsContext, fpsTexture;
+        let lastFPSTime = performance.now();
+        let frameCount = 0;
+        let currentFPS = 0;
+        // --- End FPS Counter Variables ---
+
+        // --- Uniforms for Shaders (Define globally or ensure accessible in animate) ---
+        const uniforms = {
+            time: { value: 0.0 }
+        };
+
+        // --- Vertex Shader (Define a basic one here, or load it too if needed) ---
+        // const vertexShaderSource = `
+        //     varying vec2 vUv;
+        //     void main() {
+        //         vUv = uv;
+        //         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        //     }
+        // `;
+        // --- End Shader Setup ---
+
+        // --- Function to Append Logs to UI ---
+        const logContainer = document.getElementById('cpp-log-overlay');
+        function appendLog(message) {
+            if (logContainer) {
+                const logEntry = document.createElement('span'); // Use span or div
+                logEntry.textContent = message;
+                logContainer.appendChild(logEntry);
+                logContainer.appendChild(document.createElement('br')); // Add newline
+                // Auto-scroll to bottom
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+             // Also log to browser console for redundancy
+            console.log("[C++ LOG]:", message);
+        }
+        console.log("appendLog function defined");
+        // --- End Log Function ---
+
+        async function init() {
+            console.log("init() called - starting async shader loading");
+
+            // 直接从shaders.js获取着色器代码
+            const fragmentShaders = getShaders();
+            console.log("Shaders loaded from shaders.js:", fragmentShaders.length);
+            
+            // --- Create Scene FIRST --- 
+            scene = new THREE.Scene();
+            console.log("Scene created");
+            // --- End Scene Creation --- 
+
+            // --- Initialize 3D FPS Counter ---            
+            fpsCanvas = document.createElement('canvas');
+            fpsCanvas.width = 256;
+            fpsCanvas.height = 128;
+            fpsContext = fpsCanvas.getContext('2d');
+            fpsContext.font = "Bold 40px Arial";
+            fpsContext.fillStyle = "rgba(255,255,0,0.95)"; 
+
+            fpsTexture = new THREE.CanvasTexture(fpsCanvas);
+            fpsTexture.needsUpdate = true; 
+
+            const spriteMaterial = new THREE.SpriteMaterial({ map: fpsTexture });
+            fpsTextSprite = new THREE.Sprite(spriteMaterial);
+
+            const spriteScale = 2;
+            fpsTextSprite.scale.set(spriteScale * (fpsCanvas.width / fpsCanvas.height), spriteScale, 1);
+
+            // Adjust position to be more central
+            // fpsTextSprite.position.set(-4, 2.5, 0);
+            fpsTextSprite.position.set(-2, 1.5, 0); // <-- Move closer to center
+
+            // Add to the *already created* scene 
+            scene.add(fpsTextSprite); 
+            console.log("3D FPS Counter Sprite added");
+            // --- End 3D FPS Counter Init ---
+
+            console.log("Creating main camera...");
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+            // 相机位置固定，不再跟随物体移动
+            camera.position.set(0, 0, 5); 
+            camera.updateMatrixWorld();
+            console.log("Main camera created");
+
+            // Manual Left Eye Camera
+            console.log("Creating left camera...");
+            // Start with same params as main camera, aspect will be updated in render loop
+            leftCamera = new THREE.PerspectiveCamera(camera.fov, aspect / 2, camera.near, camera.far);
+            leftCamera.position.copy(camera.position);
+            leftCamera.position.x -= eyeSep / 2; // 初始位置偏移
+            scene.add(leftCamera); 
+            console.log("Left camera created");
+
+            // Manual Right Eye Camera
+            console.log("Creating right camera...");
+            rightCamera = new THREE.PerspectiveCamera(camera.fov, aspect / 2, camera.near, camera.far);
+            rightCamera.position.copy(camera.position);
+            rightCamera.position.x += eyeSep / 2; // 初始位置偏移
+            scene.add(rightCamera);
+            console.log("Right camera created");
+
+            // Renderer
+            console.log("Creating renderer...");
+            renderer = new THREE.WebGLRenderer(/*{ antialias: true }*/);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000); // <-- Black background
+            renderer.setScissorTest(true);
+            document.body.appendChild(renderer.domElement);
+            console.log("Renderer created and added to body");
+
+            // Geometry
+            console.log("Creating geometry...");
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            // Remove vertex color/normal setup if shaders don't need it
+            // geometry.computeVertexNormals(); 
+            // --- Remove Vertex Colors Setup --- 
+            // const colors = [];
+            // const color = new THREE.Color();
+            // const facesColors = ...;
+            // const positionAttribute = ...;
+            // const colorAttribute = ...;
+            // for (let i = 0; ...) { ... }
+            // geometry.setAttribute('color', colorAttribute);
+            // --- End Remove Vertex Colors Setup ---
+
+            // --- Create Shader Materials using loaded shaders --- 
+            console.log("Creating shader materials from loaded files...");
+            const shaderMaterials = fragmentShaders.map(fsSource => {
+                return new THREE.ShaderMaterial({
+                    uniforms: uniforms,              // Use the shared uniforms object
+                    vertexShader: vertexShaderSource, // 从shaders.js中获取顶点着色器
+                    fragmentShader: fsSource          // Use the loaded fragment shader source
+                });
+            });
+            console.log(`Created ${shaderMaterials.length} shader materials`);
+
+            // --- Create Mesh with Shader Materials ---
+            // const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }); // <-- REMOVE OLD MATERIAL
+            cube = new THREE.Mesh(geometry, shaderMaterials); // Apply the array of materials
+            scene.add(cube);
+            console.log("Cube mesh created with loaded shader materials and added to scene");
+
+            // --- Add Grid Helper --- 
+            const gridSize = 100; // The overall size of the grid plane
+            const gridDivisions = 100; // How many lines in the grid
+            const gridColor = 0x888888; // Color for the grid lines
+            const centerLineColor = 0xcccccc; // Color for the center lines (X and Z axes)
+
+            const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, centerLineColor, gridColor);
+            gridHelper.position.y = -1.5; // Position it slightly below the cube's potential lowest point
+            scene.add(gridHelper);
+            console.log("GridHelper added to scene");
+            // --- End Grid Helper --- 
+
+            // Lighting (kept for potential future use)
+            console.log("Adding lights...");
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+            console.log("Lights added");
+
+            console.log("Adding resize listener...");
+            window.addEventListener('resize', onWindowResize, false);
+            console.log("Resize listener added");
+
+            console.log("Calling animate()...");
+            animate();
+            console.log("init() finished");
+        }
+
+        function onWindowResize() {
+             console.log("onWindowResize() called");
+             const width = window.innerWidth;
+             const height = window.innerHeight;
+
+             // Update main camera aspect for reference if needed
+             camera.aspect = width / height;
+             camera.updateProjectionMatrix(); // Update main camera projection
+
+             // Update renderer size
+             renderer.setSize(width, height);
+
+             // Aspect for eye cameras will be updated in render loop
+        }
+
+        function animate() {
+            // stats.begin(); // Remove stats.begin()
+
+            requestAnimationFrame(animate);
+
+            const now = performance.now();
+            frameCount++;
+
+            // --- Update FPS Counter (every second) ---
+            if (now >= lastFPSTime + 1000) {
+                currentFPS = frameCount;
+                frameCount = 0;
+                lastFPSTime = now;
+
+                // Update canvas texture
+                fpsContext.clearRect(0, 0, fpsCanvas.width, fpsCanvas.height);
+                // Draw background (optional)
+                // fpsContext.fillStyle = "rgba(0,0,0,0.5)";
+                // fpsContext.fillRect(0, 0, fpsCanvas.width, fpsCanvas.height);
+                fpsContext.fillStyle = "rgba(255,255,0,0.95)"; // Set text color again
+                fpsContext.fillText(`FPS: ${currentFPS}`, 10, 50); // Draw text (adjust x,y)
+                fpsTexture.needsUpdate = true; // Signal texture update
+            }
+            // --- End FPS Update ---
+
+            const timeValue = performance.now() * 0.001; // Use performance.now for smooth time
+
+            // --- Update Shader Uniforms --- 
+            uniforms.time.value = timeValue; // Update the shared time uniform
+            // --- End Update Shader Uniforms ---
+
+            // --- 立方体自转效果 ---
+            cube.rotation.x += 0.005;
+            cube.rotation.y += 0.007;
+            cube.rotation.z += 0.003;
+
+            // --- 立方体公转运动 (始终在视线范围内) ---
+            const orbitRadius = 2.0; // 轨道半径
+            const orbitSpeed = 0.3; // 公转速度
+            cube.position.x = orbitRadius * Math.cos(orbitSpeed * timeValue);
+            cube.position.y = orbitRadius * Math.sin(orbitSpeed * timeValue);
+            
+            // --- Z轴运动 ---
+            const zAmplitude = 1.0; // Z轴振幅
+            const zFrequency = 0.5; // Z轴频率
+            cube.position.z = zAmplitude * Math.sin(zFrequency * timeValue * 2.0);
+
+            renderStereo();
+
+            // stats.end(); // Remove stats.end()
+        }
+
+        function renderStereo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const halfWidth = width / 2;
+
+            // --- Update Eye Camera Properties ---
+            // Update aspect ratio for each eye
+            leftCamera.aspect = halfWidth / height;
+            rightCamera.aspect = halfWidth / height;
+
+            // 保持相机基本设置一致
+            leftCamera.fov = camera.fov;
+            rightCamera.fov = camera.fov;
+            leftCamera.near = camera.near;
+            rightCamera.near = camera.near;
+            leftCamera.far = camera.far;
+            rightCamera.far = camera.far;
+
+            // 固定相机位置，只应用左右眼偏移
+            leftCamera.position.set(-eyeSep / 2, 0, 5);
+            rightCamera.position.set(eyeSep / 2, 0, 5);
+
+            // 相机始终指向场景原点(0,0,0)，不跟随物体
+            leftCamera.lookAt(0, 0, 0);
+            rightCamera.lookAt(0, 0, 0);
+
+            // Update projection matrices
+            leftCamera.updateProjectionMatrix();
+            rightCamera.updateProjectionMatrix();
+            // --- End Eye Camera Update ---
+
+            // Render Left Eye
+            renderer.setViewport(0, 0, halfWidth, height);
+            renderer.setScissor(0, 0, halfWidth, height);
+            renderer.render(scene, leftCamera);
+
+            // Render Right Eye
+            renderer.setViewport(halfWidth, 0, halfWidth, height);
+            renderer.setScissor(halfWidth, 0, halfWidth, height);
+            renderer.render(scene, rightCamera);
+        }
+
+        // Ensure Three.js is loaded before initializing
+        // Use window.onload or defer script loading
+        console.log("Setting window.onload = init");
+        window.onload = init;
+        console.log("window.onload set");
+
+    </script>
+</body>
+</html> 
