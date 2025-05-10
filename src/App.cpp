@@ -118,7 +118,8 @@ bool App::CreateMainWindow() {
     if (!htmlPath.FileExists()) {
         wxLogWarning("HTML file does not exist at: %s", htmlPath.GetFullPath());
     }
-    wxString url = wxString("file://") + htmlPath.GetFullPath();
+    // wxString url = wxString("file://") + htmlPath.GetFullPath();
+    wxString url = wxString("http://localhost:5173");
     frame->PrepareLoadUrl(url);
     
     return true;

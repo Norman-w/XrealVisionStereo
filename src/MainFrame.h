@@ -14,7 +14,9 @@ public:
 private:
     wxWebView* webView = nullptr;
     wxTimer m_loadTimer;
+    wxTimer m_reloadDevServerTimer;
     wxString m_urlToLoad;
+    bool m_devServerAttempted = false;
 
     void OnClose(wxCloseEvent& event);
     void OnTimerLoad(wxTimerEvent& event);
@@ -22,6 +24,7 @@ private:
     void OnWebViewLoaded(wxWebViewEvent& event);
     void OnWebViewError(wxWebViewEvent& event);
     void OnQuit(wxCommandEvent& event);
+    void OnReloadDevServerTimer(wxTimerEvent& event);
 
     void OnCharHook(wxKeyEvent& event);
     void OnKeyDown(wxKeyEvent& event);

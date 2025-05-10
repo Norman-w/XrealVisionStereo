@@ -4,6 +4,8 @@
 #include <wx/menu.h> // Include for menu
 #include <wx/accel.h> // 添加加速器表支持
 #include <cstdio> // Include for fprintf/stderr/stdout
+#include <wx/process.h> // For wxProcess
+#include <wx/utils.h>   // For wxExecute
 
 // --- Add required headers for FS Handler ---
 #include <wx/webviewfshandler.h> // For wxWebViewFSHandler (Corrected class name here too)
@@ -18,7 +20,8 @@
 // --- End Add Headers ---
 
 enum {
-    ID_LoadTimer = wxID_HIGHEST + 1
+    ID_LoadTimer = wxID_HIGHEST + 1,
+    ID_ReloadDevServerTimer // Add new timer ID
     // No need for custom menu IDs if using stock IDs like wxID_EXIT
 };
 
@@ -129,12 +132,15 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_KEY_DOWN(MainFrame::OnKeyDown)
     EVT_KEY_UP(MainFrame::OnKeyUp)
     EVT_SIZE(MainFrame::OnSize)  // 添加大小变化处理
+    EVT_TIMER(ID_ReloadDevServerTimer, MainFrame::OnReloadDevServerTimer) // Add event table entry for new timer
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
     : wxFrame(nullptr, wxID_ANY, title, pos, size, 
               wxFULL_REPAINT_ON_RESIZE | wxNO_BORDER), // 移除wxDEFAULT_FRAME_STYLE，使用更简洁的样式
-      m_loadTimer(this, ID_LoadTimer)
+      m_loadTimer(this, ID_LoadTimer),
+      m_devServerAttempted(false), // Initialize m_devServerAttempted
+      m_reloadDevServerTimer(this, ID_ReloadDevServerTimer) // Set owner and ID for the new timer
 {
     // 设置为真正的无边框窗口
     SetWindowStyle(wxNO_BORDER | wxCLIP_CHILDREN);
@@ -235,6 +241,9 @@ MainFrame::~MainFrame() {
 
 void MainFrame::PrepareLoadUrl(const wxString& url) {
     m_urlToLoad = url;
+    if (m_urlToLoad == "http://localhost:5173") {
+        m_devServerAttempted = false; // Reset when trying to load the dev server URL
+    }
     if (!m_loadTimer.StartOnce(100)) {
         // Corrected fprintf (newline inside quotes)
         fprintf(stderr, "[错误] 无法启动加载计时器。\n");
@@ -296,12 +305,47 @@ void MainFrame::OnWebViewLoaded(wxWebViewEvent& event) {
 }
 
 void MainFrame::OnWebViewError(wxWebViewEvent& event) {
-    // Corrected fwprintf (newline inside quotes)
-    fwprintf(stderr, L"[错误] WebView 错误: URL='%ls', Target='%ls', Code=%d, Description='%ls'\n",
-               (const wchar_t*)event.GetURL().wc_str(),
-               (const wchar_t*)event.GetTarget().wc_str(),
-               event.GetInt(),
-               (const wchar_t*)event.GetString().wc_str());
+    wxString url = event.GetURL();
+    wxString targetUrl = "http://localhost:5173";
+    fprintf(stderr, "[WebView ERROR] Failed to load URL: %s, Error: %s\n", 
+            (const char*)url.ToUTF8(), (const char*)event.GetString().ToUTF8());
+
+    if (url == targetUrl && !m_devServerAttempted) {
+        m_devServerAttempted = true;
+        fprintf(stderr, "[WebView INFO] Attempting to start dev server and reload...\n");
+
+        // Get the base path of the application
+        wxString basePath = wxStandardPaths::Get().GetExecutablePath();
+        wxFileName exeFileName(basePath);
+        exeFileName.RemoveLastDir(); // up to Contents/MacOS
+        exeFileName.RemoveLastDir(); // up to Contents
+        exeFileName.RemoveLastDir(); // up to XrealVisionStereo.app
+        exeFileName.RemoveLastDir(); // up to the directory containing the .app bundle (project root)
+        wxString projectRootPath = exeFileName.GetPath();
+
+        // Construct the command to run npm run dev in the web directory
+        // wxString command = wxString::Format("cd %s/web && npm run dev", projectRootPath);
+        // Using wxExecute, it's better to set the working directory if possible, or use shell.
+        // For simplicity with wxExecute and to ensure environment is sourced:
+        wxString command = wxString::Format("sh -c 'cd %s/web && npm run dev'", projectRootPath);
+
+        fprintf(stderr, "[WebView INFO] Executing command: %s\n", (const char*)command.ToUTF8());
+
+        // Execute the command in the background
+        long processId = wxExecute(command, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER);
+
+        if (processId == 0) {
+            fprintf(stderr, "[WebView ERROR] Failed to execute command: %s\n", (const char*)command.ToUTF8());
+        } else {
+            fprintf(stderr, "[WebView INFO] Dev server process started with PID: %ld. Will attempt to reload in 5 seconds.\n", processId);
+            // Start the reload timer
+            if (!m_reloadDevServerTimer.StartOnce(5000)) { // 5000 ms = 5 seconds
+                fprintf(stderr, "[WebView ERROR] Failed to start the dev server reload timer!\n");
+            }
+        }
+    } else if (url == targetUrl && m_devServerAttempted) {
+        fprintf(stderr, "[WebView WARNING] Still failed to load %s after attempting to start dev server. Please check server logs.\n", (const char*)targetUrl.ToUTF8());
+    }
 }
 
 // --- Add Implementations for Missing Key Handlers ---
@@ -343,6 +387,17 @@ void MainFrame::OnKeyUp(wxKeyEvent& event) {
     event.Skip(); // Allow event to propagate
 }
 // --- End Key Handler Implementations ---
+
+// --- Implementation for OnReloadDevServerTimer ---
+void MainFrame::OnReloadDevServerTimer(wxTimerEvent& event) {
+    fprintf(stderr, "[WebView INFO] Reload timer triggered. Attempting to load %s\n", "http://localhost:5173");
+    if (webView) {
+        m_devServerAttempted = false; // Allow another attempt to start server if this fails
+        webView->LoadURL("http://localhost:5173");
+    } else {
+        fprintf(stderr, "[WebView ERROR] Cannot reload dev server URL, webView is null!\n");
+    }
+}
 
 // --- Add LogToWebView Method --- 
 void MainFrame::LogToWebView(const wxString& message) {
