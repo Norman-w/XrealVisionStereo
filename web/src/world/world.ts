@@ -83,7 +83,15 @@ function releaseCyberpunkSpace() {
     cyberClusters.length = 0;
 }
 
-function renderWorld() {
+function renderWorld(isStereo: boolean) {
+    if(isStereo){
+        renderWorldByStereo();
+        return;
+    }
+    renderWorldByMono();
+}
+
+function renderWorldByStereo() {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const halfWidth = width / 2;
@@ -114,6 +122,17 @@ function renderWorld() {
     rightCamera.updateProjectionMatrix();
     renderer.setViewport(halfWidth, 0, halfWidth, height);
     renderer.setScissor(halfWidth, 0, halfWidth, height);
+    composer.render();
+}
+
+function renderWorldByMono() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    //只显示左眼
+    renderPass.camera = camera;
+    camera.updateProjectionMatrix();
+    renderer.setViewport(0, 0, width, height);
+    renderer.setScissor(0, 0, width, height);
     composer.render();
 }
 

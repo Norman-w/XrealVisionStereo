@@ -1,7 +1,12 @@
 <template>
 	<div class="stereo-container">
-		<div id="left-eye-overlay" class="debug-overlay">Left Eye</div>
-		<div id="right-eye-overlay" class="debug-overlay">Right Eye</div>
+		<div id=""></div>
+		<div id="left-eye-overlay" class="debug-overlay" v-show="isFullResolution">
+			Left Eye
+		</div>
+		<div id="right-eye-overlay" class="debug-overlay" v-show="isFullResolution || !isFullResolution">
+			Right Eye
+		</div>
 		<CPlusPlusLogs v-show="showCppLog" ref="cppLog" />
 		<div id="cpp-log-overlay" v-show="showCppLog">[C++ Logs]<br/></div>
 		<div ref="canvasContainer"></div>
@@ -32,6 +37,8 @@ function toggleCppLog() {
 	showCppLog.value = !showCppLog.value;
 }
 
+const isFullResolution = ref(false);
+
 function init() {
 	window.addEventListener('resize', onWindowResize, false);
 	(window as any).appendLogToUI = cppLog.value?.appendLog;
@@ -43,10 +50,13 @@ function init() {
 function onWindowResize() {
 	const width = window.innerWidth;
 	const height = window.innerHeight;
+	isFullResolution.value = width === 3840 && height === 1080;
 	cameraState.aspect = width / height;
 	camera.updateProjectionMatrix();
 	renderer.setSize(width, height);
 	composer.setSize(width, height); // Update composer size
+	document.getElementById('left-eye-overlay')!.style.display = isFullResolution.value ? 'block' : 'block';
+	document.getElementById('right-eye-overlay')!.style.display = isFullResolution.value ? 'block' : 'none';
 	// For UnrealBloomPass, if resolution issues arise, one might need to update its internal resolution
 	// or recreate it, but composer.setSize often handles this for its passes.
 	bloomPass.resolution.set(width, height);
@@ -64,7 +74,7 @@ function animate() {
 		needRemoveObj=>scene.remove(needRemoveObj),
 		needAddObj=>scene.add(needAddObj)
 	);
-	renderWorld();
+	renderWorld(isFullResolution.value);
 }
 
 onMounted(() => {
@@ -120,6 +130,17 @@ onUnmounted(() => {
 #right-eye-overlay {
 	left: 50vw; /* Start at halfway point */
 }
+/*当屏幕宽度不够3840的时候,只显示右眼满宽度*/
+@media (max-width: 3840px) {
+	#left-eye-overlay {
+		display: none;
+	}
+	#right-eye-overlay {
+		left: 0;
+		width: 100vw; /* Full width */
+	}
+}
+
 
 
 .toggle-log-button {
