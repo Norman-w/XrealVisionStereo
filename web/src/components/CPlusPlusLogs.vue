@@ -18,6 +18,7 @@ defineExpose({
 </script>
 <template>
 	<div id="cpp-log-overlay">
+		<div id="cpp-log-overlay">[C++ Logs]<br/></div>
 		<!-- C++ Logs will be appended here -->
 	</div>
 </template>

@@ -8,7 +8,6 @@
 			Right Eye
 		</div>
 		<CPlusPlusLogs v-show="showCppLog" ref="cppLog" />
-		<div id="cpp-log-overlay" v-show="showCppLog">[C++ Logs]<br/></div>
 		<div ref="canvasContainer"></div>
 		<button @click="toggleCppLog" class="toggle-log-button">
 			{{ showCppLog ? 'Hide' : 'Show' }} Log
