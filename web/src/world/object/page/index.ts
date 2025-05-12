@@ -1,18 +1,21 @@
-import {initPage, releasePage, renderPage} from "./bigCircle.ts";
+import { initPage as initBigCirclePage, releasePage as  releaseBigCirclePage, renderPage as renderBigCirclePage} from "./bigCircle.ts";
+import { initPage as initSnakesInCubePage } from "./snakeInCube";
 
 function initPages() {
-    let bigCirclePage = initPage();
+    let bigCirclePage = initBigCirclePage();
+    let snakesInCubePage = initSnakesInCubePage();
     let result = [];
     result.push(bigCirclePage);
+    result.push(snakesInCubePage);
     return result;
 }
 
 function renderPages() {
-    renderPage();
+    renderBigCirclePage();
 }
 
 function releasePages() {
-    releasePage();
+    releaseBigCirclePage();
 }
 
 export {initPages, renderPages, releasePages};

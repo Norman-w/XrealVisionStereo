@@ -182,7 +182,7 @@ function initPage() {
     initAllCircles();
     const panel = initPanel();
     page.add(panel);
-    page.position.set(0, 0, -600);
+    page.position.set(300, 0, -700);
     page.rotation.set(0, 0, 0);
     page.scale.set(1, 1, 1);
     page.castShadow = true;

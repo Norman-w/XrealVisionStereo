@@ -5,8 +5,8 @@ let camera: THREE.PerspectiveCamera;
 const cameraConfig = {
     aspect: window.innerWidth / window.innerHeight,
     fov: 45,
-    near: 0.1,
-    far: 1000,
+    near: 1,
+    far: 1000000,
 }
 
 const cameraState = {
