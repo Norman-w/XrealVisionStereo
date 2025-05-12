@@ -10,6 +10,7 @@ import {camera} from "./camera/main.ts";
 import {composer, initComposer, renderPass} from "./post-processing/composer.ts";
 import {leftCamera} from "./camera/leftEyeCamera.ts";
 import {rightCamera} from "./camera/rightEyeCamera.ts";
+import {initPages} from "./object/page";
 
 let scene: THREE.Scene;
 let renderer: THREE.WebGLRenderer;
@@ -34,6 +35,8 @@ function initWorld(canvasContainer: HTMLDivElement){
     scene.add(groundGrid);
     let lights = initDefaultMainLights();
     lights.forEach(light => scene.add(light));
+    let pages = initPages();
+    pages.forEach(page => scene.add(page));
 
     cyberClusters.forEach(cluster => scene.add(cluster));
     initCyberpunkSpace();
