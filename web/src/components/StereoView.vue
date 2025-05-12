@@ -5,7 +5,7 @@
 			Left Eye
 		</div>
 		<div id="right-eye-overlay" class="debug-overlay" v-show="isFullResolution || !isFullResolution">
-			Right Eye
+			{{isFullResolution ? 'Right Eye' : ''}}
 		</div>
 		<CPlusPlusLogs v-show="showCppLog" ref="cppLog" />
 		<div ref="canvasContainer"></div>
@@ -109,7 +109,7 @@ onUnmounted(() => {
 	top: 0;
 	height: 100vh; /* Full height */
 	width: 50vw; /* Half width */
-	border: 2px solid yellow;
+	/*border: 2px solid yellow;*/
 	box-sizing: border-box; /* Include border in width/height */
 	pointer-events: none; /* Allow clicks to pass through */
 	color: yellow;
