@@ -55,8 +55,8 @@ function onWindowResize() {
 	camera.updateProjectionMatrix();
 	renderer.setSize(width, height);
 	composer.setSize(width, height); // Update composer size
-	document.getElementById('left-eye-overlay')!.style.display = isFullResolution.value ? 'block' : 'block';
-	document.getElementById('right-eye-overlay')!.style.display = isFullResolution.value ? 'block' : 'none';
+	document.getElementById('left-eye-overlay')!.style.display = isFullResolution.value ? 'block' : 'none';
+	document.getElementById('right-eye-overlay')!.style.display = isFullResolution.value ? 'block' : 'block';
 	// For UnrealBloomPass, if resolution issues arise, one might need to update its internal resolution
 	// or recreate it, but composer.setSize often handles this for its passes.
 	bloomPass.resolution.set(width, height);
