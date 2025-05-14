@@ -17,7 +17,8 @@ let scene: THREE.Scene;
 let renderer: THREE.WebGLRenderer;
 const eyeSep = 0.06;
 
-let textOutputTestInterval: number | undefined;
+// let textOutputTestInterval: number | undefined; // Will be redefined for new interval
+let mockTextIntervalId: number | undefined;
 
 function initWorld(canvasContainer: HTMLDivElement){
     scene = new THREE.Scene();
@@ -49,28 +50,87 @@ function initWorld(canvasContainer: HTMLDivElement){
     textOutputWidget.scale.set(1, 1, 1); // Scale is now 1:1 as widget is in mm
     scene.add(textOutputWidget);
 
-    const generateTestString = (char: string, count: number) => char.repeat(count);
-    
-    // New dynamic test sequence
-    const dynamicTestBatches = [
-        { char: "A", count: 20,  delay: 2000 },   // Initial: 2s delay, 20 chars
-        { char: "B", count: 300, delay: 1000 },   // 1s later, 300 chars
-        { char: "C", count: 5,   delay: 500  },    // 0.5s later, 5 chars (very quick succession)
-        { char: "D", count: 80,  delay: 4000 },   // 4s later, 80 chars
-        { char: "E", count: 500, delay: 1500 },   // 1.5s later, 500 chars (large batch)
-        { char: "F", count: 15,  delay: 3000 },   // 3s later, 15 chars
-        { char: "G", count: 250, delay: 2000 },   // 2s later, 250 chars
-        { char: "H", count: 50,  delay: 500 }     // 0.5s later, 50 chars
-    ];
+    // Remove old test sequence
+    // const generateTestString = (char: string, count: number) => char.repeat(count);
+    // const dynamicTestBatches = [ ... ];
+    // let cumulativeDelay = 0;
+    // dynamicTestBatches.forEach((batch, index) => { ... });
 
-    let cumulativeDelay = 0;
-    dynamicTestBatches.forEach((batch, index) => {
-        cumulativeDelay += batch.delay;
-        setTimeout(() => {
-            console.log(`%c[WORLD TEST ${index+1}] Appending ${batch.count} '${batch.char}'s. Total elapsed: ${(cumulativeDelay/1000).toFixed(1)}s. Next append in: ${index < dynamicTestBatches.length - 1 ? (dynamicTestBatches[index+1].delay/1000).toFixed(1) + 's' : 'N/A'}`, 'color: magenta');
-            appendToTextOutput(generateTestString(batch.char, batch.count) + "\n");
-        }, cumulativeDelay);
-    });
+    // --- New "busy" text generation ---
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const symbols = ['.', ',', ';', '!', '?', '#', '@', '$', '%', '^', '&', '*', '~'];
+
+    function getRandomInt(min: number, max: number): number {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateRandomWord(): string {
+        const length = getRandomInt(2, 20);
+        let word = '';
+        for (let i = 0; i < length; i++) {
+            word += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return word;
+    }
+
+    function generateRandomParagraph(): string {
+        let numWords: number;
+        if (Math.random() < 0.3) { // 30% chance for 1-10 words
+            numWords = getRandomInt(1, 10);
+        } else { // 70% chance for 11-50 words (changed from 100)
+            numWords = getRandomInt(11, 50);
+        }
+
+        let paragraph = '';
+        for (let i = 0; i < numWords; i++) {
+            paragraph += generateRandomWord();
+            if (Math.random() < 0.3) { // 30% chance to add a symbol after a word
+                paragraph += symbols[Math.floor(Math.random() * symbols.length)];
+            }
+            if (i < numWords - 1) {
+                paragraph += ' ';
+            }
+        }
+        if (Math.random() < 0.2) { // 20% chance to end paragraph with a newline
+            paragraph += '\n';
+        }
+        return paragraph;
+    }
+
+    function startMockTextGeneration() {
+        if (mockTextIntervalId) {
+            clearInterval(mockTextIntervalId);
+        }
+        
+        function appendMockText() {
+            let paragraph = generateRandomParagraph(); // paragraph might end with \n (20% chance from generator)
+            
+            // Ensure that the appended block is followed by a newline.
+            if (!paragraph.endsWith('\n')) {
+                paragraph += '\n';
+            }
+
+            console.log(`%c[MOCK TEXT] Appending: "${paragraph.substring(0, 50)}${paragraph.length > 50 ? '...' : ''}" (now ensuring it ends with a newline character)`, 'color:dodgerblue');
+            appendToTextOutput(paragraph);
+            
+            // Randomly add an *extra* empty line after the paragraph's own newline.
+            if (Math.random() < 0.15) { // 15% chance to add an empty line
+                console.log("%c[MOCK TEXT] Adding extra empty line", 'color:skyblue');
+                appendToTextOutput('\n');
+            }
+            
+            // Schedule next append with a random delay
+            const randomDelay = getRandomInt(200, 1500); // 0.2s to 1.5s
+            mockTextIntervalId = window.setTimeout(appendMockText, randomDelay);
+        }
+        
+        appendMockText(); // Start the first one immediately, then it will self-schedule
+    }
+
+    startMockTextGeneration();
+    // --- End new "busy" text generation ---
 
     initComposer(scene, camera, renderer);
 }
@@ -82,9 +142,13 @@ function releaseWorld(){
     scene.remove(cube);
     scene.remove(fps);
     // Release TextOutput Widget
-    if (textOutputTestInterval) {
-        clearInterval(textOutputTestInterval);
-        textOutputTestInterval = undefined;
+    // if (textOutputTestInterval) { // old interval
+    //     clearInterval(textOutputTestInterval);
+    //     textOutputTestInterval = undefined;
+    // }
+    if (mockTextIntervalId) {
+        clearTimeout(mockTextIntervalId); // Use clearTimeout for IDs from setTimeout
+        mockTextIntervalId = undefined;
     }
     releaseTextOutputWidget();
     // Note: The textOutputWidget itself is a THREE.Group, its children are disposed by releaseTextOutputWidget.
