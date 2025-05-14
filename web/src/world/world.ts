@@ -11,11 +11,13 @@ import {composer, initComposer, renderPass} from "./post-processing/composer.ts"
 import {leftCamera} from "./camera/leftEyeCamera.ts";
 import {rightCamera} from "./camera/rightEyeCamera.ts";
 import {initPages} from "./object/page";
+import { initWidget as initTextOutputWidget, releaseWidget as releaseTextOutputWidget, appendText as appendToTextOutput } from './object/widget/textOutput';
 
 let scene: THREE.Scene;
 let renderer: THREE.WebGLRenderer;
 const eyeSep = 0.06;
 
+let textOutputTestInterval: number | undefined;
 
 function initWorld(canvasContainer: HTMLDivElement){
     scene = new THREE.Scene();
@@ -41,6 +43,35 @@ function initWorld(canvasContainer: HTMLDivElement){
     cyberClusters.forEach(cluster => scene.add(cluster));
     initCyberpunkSpace();
 
+    // Initialize TextOutput Widget
+    const textOutputWidget = initTextOutputWidget();
+    textOutputWidget.position.set(0, 0, -1500); // Positioned 1.5 meters away, centered vertically for now
+    textOutputWidget.scale.set(1, 1, 1); // Scale is now 1:1 as widget is in mm
+    scene.add(textOutputWidget);
+
+    const generateTestString = (char: string, count: number) => char.repeat(count);
+    
+    // New dynamic test sequence
+    const dynamicTestBatches = [
+        { char: "A", count: 20,  delay: 2000 },   // Initial: 2s delay, 20 chars
+        { char: "B", count: 300, delay: 1000 },   // 1s later, 300 chars
+        { char: "C", count: 5,   delay: 500  },    // 0.5s later, 5 chars (very quick succession)
+        { char: "D", count: 80,  delay: 4000 },   // 4s later, 80 chars
+        { char: "E", count: 500, delay: 1500 },   // 1.5s later, 500 chars (large batch)
+        { char: "F", count: 15,  delay: 3000 },   // 3s later, 15 chars
+        { char: "G", count: 250, delay: 2000 },   // 2s later, 250 chars
+        { char: "H", count: 50,  delay: 500 }     // 0.5s later, 50 chars
+    ];
+
+    let cumulativeDelay = 0;
+    dynamicTestBatches.forEach((batch, index) => {
+        cumulativeDelay += batch.delay;
+        setTimeout(() => {
+            console.log(`%c[WORLD TEST ${index+1}] Appending ${batch.count} '${batch.char}'s. Total elapsed: ${(cumulativeDelay/1000).toFixed(1)}s. Next append in: ${index < dynamicTestBatches.length - 1 ? (dynamicTestBatches[index+1].delay/1000).toFixed(1) + 's' : 'N/A'}`, 'color: magenta');
+            appendToTextOutput(generateTestString(batch.char, batch.count) + "\n");
+        }, cumulativeDelay);
+    });
+
     initComposer(scene, camera, renderer);
 }
 
@@ -50,6 +81,15 @@ function releaseWorld(){
     let fps = releaseFPS();
     scene.remove(cube);
     scene.remove(fps);
+    // Release TextOutput Widget
+    if (textOutputTestInterval) {
+        clearInterval(textOutputTestInterval);
+        textOutputTestInterval = undefined;
+    }
+    releaseTextOutputWidget();
+    // Note: The textOutputWidget itself is a THREE.Group, its children are disposed by releaseTextOutputWidget.
+    // We might need to explicitly remove it from the scene if releaseTextOutputWidget doesn't handle that.
+    // For now, assuming scene graph cleanup is handled if widget is removed by its release function.
 }
 
 function initCyberpunkSpace() {
