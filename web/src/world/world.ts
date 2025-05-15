@@ -77,10 +77,10 @@ function initWorld(canvasContainer: HTMLDivElement){
 
     function generateRandomParagraph(): string {
         let numWords: number;
-        if (Math.random() < 0.3) { // 30% chance for 1-10 words
-            numWords = getRandomInt(1, 10);
-        } else { // 70% chance for 11-50 words (changed from 100)
-            numWords = getRandomInt(11, 50);
+        if (Math.random() < 0.3) { //30%1~5个单词一段的
+            numWords = getRandomInt(1, 5);
+        } else {//70% 2~20个单词一段的
+            numWords = getRandomInt(5, 20);
         }
 
         let paragraph = '';

@@ -49,7 +49,7 @@ const textEmissiveColor = 0x00cc00; // 文本自发光颜色，比主色稍暗�
 const textCharacterSize = characterCellHeight * 0.6; // 文本字符大小，基于单元格高度
 const textGeometryHeight = textCharacterSize * 0.1; // 文本几何体厚度，可以很小
 
-const totalDurationPerAppendMs = 2000; // 新文本在2秒内显示完
+const totalDurationPerAppendMs = 6000; // 新文本在6秒内显示完
 const newLineCharAsLength = 10;       // 换行符等效10个字符长度
 
 // --- 主 Widget Group ---
