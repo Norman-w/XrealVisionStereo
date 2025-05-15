@@ -27,6 +27,9 @@ let axisGizmo: AxisIndicator | null = null;
 let glslCube: THREE.Mesh | null = null;
 let currentAxisAnimationTargetIndex: number = -1; // To track the current target
 
+let lastAxisGizmoUpdateTimestamp: number = 0;
+const axisGizmoUpdateInterval: number = 1000 / 10; // Approx. 10 FPS, 100ms interval
+
 const axisAnimationPath: THREE.Vector3[] = [
     new THREE.Vector3(-500, 250, -800),  // 1. Top-Left-Back
     new THREE.Vector3(500, 250, -800),   // 2. Top-Right-Back
@@ -272,10 +275,16 @@ function releaseCyberpunkSpace() {
 }
 
 function renderWorld(isStereo: boolean) {
+    const currentTime = performance.now(); // Get current time for throttling
+
     if (axisGizmo && glslCube) {
-        const cubePosition = new THREE.Vector3();
-        glslCube.getWorldPosition(cubePosition); // Get world position
-        axisGizmo.showValues(cubePosition);      // Update gizmo display
+        // Throttle the update of axisGizmo text values
+        if (currentTime - lastAxisGizmoUpdateTimestamp > axisGizmoUpdateInterval) {
+            const cubePosition = new THREE.Vector3();
+            glslCube.getWorldPosition(cubePosition);
+            axisGizmo.showValues(cubePosition);
+            lastAxisGizmoUpdateTimestamp = currentTime; // Update timestamp
+        }
     }
 
     if(isStereo){
