@@ -3,7 +3,7 @@ import {CLUSTER_SPAWN_X_RIGHT, MAX_CLUSTERS} from "./definition/constant.ts";
 import {cyberClusters} from "./object/cluster/container.ts";
 import * as THREE from "three";
 import {initFPS, releaseFPS} from "./billboard/fps.ts";
-import {initCube, releaseCube} from "./test-object/cube.ts";
+import {initCube, releaseCube, getCubeRawGLSLShaders} from "./test-object/cube.ts";
 import {initGroundGrid} from "./ground/grid.ts";
 import {initDefaultMainLights} from "./light/main.ts";
 import {camera} from "./camera/main.ts";
@@ -19,6 +19,8 @@ const eyeSep = 0.06;
 
 // let textOutputTestInterval: number | undefined; // Will be redefined for new interval
 let mockTextIntervalId: number | undefined;
+let cubeGLSLShaders: { vertex: string, fragments: string[] } | null = null;
+let allShaderLines: string[] = [];
 
 function initWorld(canvasContainer: HTMLDivElement){
     scene = new THREE.Scene();
@@ -50,6 +52,15 @@ function initWorld(canvasContainer: HTMLDivElement){
     textOutputWidget.scale.set(1, 1, 1); // Scale is now 1:1 as widget is in mm
     scene.add(textOutputWidget);
 
+    // Get GLSL shaders
+    cubeGLSLShaders = getCubeRawGLSLShaders();
+    allShaderLines = cubeGLSLShaders.vertex.split('\n');
+    cubeGLSLShaders.fragments.forEach(fragShader => {
+        allShaderLines.push(...fragShader.split('\n'));
+    });
+    // Filter out empty lines or very short lines if desired
+    allShaderLines = allShaderLines.map(line => line.trim()).filter(line => line.length > 2); 
+
     // Remove old test sequence
     // const generateTestString = (char: string, count: number) => char.repeat(count);
     // const dynamicTestBatches = [ ... ];
@@ -57,45 +68,47 @@ function initWorld(canvasContainer: HTMLDivElement){
     // dynamicTestBatches.forEach((batch, index) => { ... });
 
     // --- New "busy" text generation ---
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const symbols = ['.', ',', ';', '!', '?', '#', '@', '$', '%', '^', '&', '*', '~'];
-
     function getRandomInt(min: number, max: number): number {
         min = Math.ceil(min);
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    function generateRandomWord(): string {
-        const length = getRandomInt(2, 20);
-        let word = '';
-        for (let i = 0; i < length; i++) {
-            word += characters.charAt(Math.floor(Math.random() * characters.length));
+    function generateRandomGLSLSnippet(): string {
+        if (allShaderLines.length === 0) return '';
+        const snippetLines: string[] = [];
+        const numLinesToPick = getRandomInt(1, 5); // Pick 1 to 5 lines for a snippet
+        let currentLine = '';
+
+        for (let i = 0; i < numLinesToPick; i++) {
+            const randomIndex = Math.floor(Math.random() * allShaderLines.length);
+            const line = allShaderLines[randomIndex];
+            // Try to make it a bit more like a single "word" for the paragraph structure
+            // by concatenating, or just return a multi-line string if paragraph handles it.
+            // For now, let's treat a few lines of GLSL as a single "word"/block
+            if (line) snippetLines.push(line);
         }
-        return word;
+        // Join with space to simulate a word, or newline if textOutput handles it well visually for snippets
+        return snippetLines.join(' \\n '); // Add newlines between GLSL lines for better readability in output
     }
 
     function generateRandomParagraph(): string {
-        let numWords: number;
-        if (Math.random() < 0.3) { //30%1~5个单词一段的
-            numWords = getRandomInt(1, 5);
-        } else {//70% 2~20个单词一段的
-            numWords = getRandomInt(5, 20);
-        }
-
+        // A "paragraph" now consists of 1 to 3 GLSL snippets.
+        const numSnippets = getRandomInt(1, 3);
         let paragraph = '';
-        for (let i = 0; i < numWords; i++) {
-            paragraph += generateRandomWord();
-            if (Math.random() < 0.3) { // 30% chance to add a symbol after a word
-                paragraph += symbols[Math.floor(Math.random() * symbols.length)];
-            }
-            if (i < numWords - 1) {
-                paragraph += ' ';
+
+        for (let i = 0; i < numSnippets; i++) {
+            const snippet = generateRandomGLSLSnippet();
+            if (snippet) {
+                paragraph += snippet;
+                // Add a newline between snippets within the same "paragraph" block, 
+                // unless it's the last snippet in this block.
+                if (i < numSnippets - 1) {
+                    paragraph += '\n'; 
+                }
             }
         }
-        if (Math.random() < 0.2) { // 20% chance to end paragraph with a newline
-            paragraph += '\n';
-        }
+        // The existing logic in appendMockText will ensure the whole paragraph block ends with a newline.
         return paragraph;
     }
 

@@ -63,3 +63,10 @@ export const animateCube = (timeValue: number) => {
     cube.position.y = orbitRadius * Math.sin(0.25 * timeValue);
     cube.position.z = 1.5 * Math.sin(0.4 * timeValue * 2.0);
 }
+
+export const getCubeRawGLSLShaders = (): { vertex: string, fragments: string[] } => {
+    return {
+        vertex: vertexShaderSource,
+        fragments: [...fragmentShaders] // Return a copy of the array
+    };
+};
