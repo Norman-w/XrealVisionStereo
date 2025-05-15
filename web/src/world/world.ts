@@ -7,13 +7,21 @@ import {initCube, releaseCube, getCubeRawGLSLShaders} from "./test-object/glslCu
 import {initGroundGrid} from "./ground/grid.ts";
 import {initDefaultMainLights} from "./light/main.ts";
 import {camera} from "./camera/main.ts";
-import {composer, initComposer, renderPass} from "./post-processing/composer.ts";
+import {composer, initComposer, renderPass, bokehPass} from "./post-processing/composer.ts";
 import {leftCamera} from "./camera/leftEyeCamera.ts";
 import {rightCamera} from "./camera/rightEyeCamera.ts";
-import {initPages} from "./object/page";
+import { initPages, releasePages } from "./object/page";
 import { initWidget as initTextOutputWidget, releaseWidget as releaseTextOutputWidget, appendText as appendToTextOutput } from './object/widget/textOutput';
 import { initAxisIndicator, releaseAxisIndicator, type AxisIndicator } from './object/widget/axisIndicator';
 import gsap from 'gsap';
+
+// Interface for BokehPass uniforms for type safety
+interface BokehPassUniforms {
+    focus: THREE.Uniform;
+    aperture: THREE.Uniform;
+    maxblur: THREE.Uniform;
+    // Add other uniforms if accessed, e.g., 'aspect' might be relevant if it needs manual update
+}
 
 let scene: THREE.Scene;
 let renderer: THREE.WebGLRenderer;
@@ -72,10 +80,6 @@ function startAxisGizmoAnimation() {
 }
 
 function stopAxisGizmoAnimation() {
-    // if (axisGizmoAnimation) { // Old timeline logic
-    //     axisGizmoAnimation.kill();
-    //     axisGizmoAnimation = null;
-    // }
     if (axisGizmo) {
         gsap.killTweensOf(axisGizmo.position); // Kill any active tweens on the position
     }
@@ -106,33 +110,22 @@ function initWorld(canvasContainer: HTMLDivElement){
     cyberClusters.forEach(cluster => scene.add(cluster));
     initCyberpunkSpace();
 
-    // Initialize TextOutput Widget
     const textOutputWidget = initTextOutputWidget();
-    textOutputWidget.position.set(0, 0, -1500); // Positioned 1.5 meters away, centered vertically for now
-    textOutputWidget.scale.set(1, 1, 1); // Scale is now 1:1 as widget is in mm
+    textOutputWidget.position.set(0, 0, -1500); 
+    textOutputWidget.scale.set(1, 1, 1); 
     scene.add(textOutputWidget);
 
-    // Initialize AxisIndicator Widget
-    axisGizmo = initAxisIndicator(true, 80); // User updated: axis length 80mm
+    axisGizmo = initAxisIndicator(true, 80); 
     scene.add(axisGizmo);
-    startAxisGizmoAnimation(); // Start the animation
+    startAxisGizmoAnimation();
 
-    // Get GLSL shaders
     cubeGLSLShaders = getCubeRawGLSLShaders();
     allShaderLines = cubeGLSLShaders.vertex.split('\n');
     cubeGLSLShaders.fragments.forEach(fragShader => {
         allShaderLines.push(...fragShader.split('\n'));
     });
-    // Filter out empty lines or very short lines if desired
     allShaderLines = allShaderLines.map(line => line.trim()).filter(line => line.length > 2); 
 
-    // Remove old test sequence
-    // const generateTestString = (char: string, count: number) => char.repeat(count);
-    // const dynamicTestBatches = [ ... ];
-    // let cumulativeDelay = 0;
-    // dynamicTestBatches.forEach((batch, index) => { ... });
-
-    // --- New "busy" text generation ---
     function getRandomInt(min: number, max: number): number {
         min = Math.ceil(min);
         max = Math.floor(max);
@@ -142,22 +135,17 @@ function initWorld(canvasContainer: HTMLDivElement){
     function generateRandomGLSLSnippet(): string {
         if (allShaderLines.length === 0) return '';
         const snippetLines: string[] = [];
-        const numLinesToPick = getRandomInt(1, 5); // Pick 1 to 5 lines for a snippet
+        const numLinesToPick = getRandomInt(1, 5);
 
         for (let i = 0; i < numLinesToPick; i++) {
             const randomIndex = Math.floor(Math.random() * allShaderLines.length);
             const line = allShaderLines[randomIndex];
-            // Try to make it a bit more like a single "word" for the paragraph structure
-            // by concatenating, or just return a multi-line string if paragraph handles it.
-            // For now, let's treat a few lines of GLSL as a single "word"/block
             if (line) snippetLines.push(line);
         }
-        // Join with space to simulate a word, or newline if textOutput handles it well visually for snippets
-        return snippetLines.join(' \\n '); // Add newlines between GLSL lines for better readability in output
+        return snippetLines.join(' \n ');
     }
 
     function generateRandomParagraph(): string {
-        // A "paragraph" now consists of 1 to 3 GLSL snippets.
         const numSnippets = getRandomInt(1, 3);
         let paragraph = '';
 
@@ -165,14 +153,11 @@ function initWorld(canvasContainer: HTMLDivElement){
             const snippet = generateRandomGLSLSnippet();
             if (snippet) {
                 paragraph += snippet;
-                // Add a newline between snippets within the same "paragraph" block, 
-                // unless it's the last snippet in this block.
                 if (i < numSnippets - 1) {
                     paragraph += '\n'; 
                 }
             }
         }
-        // The existing logic in appendMockText will ensure the whole paragraph block ends with a newline.
         return paragraph;
     }
 
@@ -182,9 +167,8 @@ function initWorld(canvasContainer: HTMLDivElement){
         }
         
         function appendMockText() {
-            let paragraph = generateRandomParagraph(); // paragraph might end with \n (20% chance from generator)
+            let paragraph = generateRandomParagraph();
             
-            // Ensure that the appended block is followed by a newline.
             if (!paragraph.endsWith('\n')) {
                 paragraph += '\n';
             }
@@ -192,24 +176,27 @@ function initWorld(canvasContainer: HTMLDivElement){
             console.log(`%c[MOCK TEXT] Appending: "${paragraph.substring(0, 50)}${paragraph.length > 50 ? '...' : ''}" (now ensuring it ends with a newline character)`, 'color:dodgerblue');
             appendToTextOutput(paragraph);
             
-            // Randomly add an *extra* empty line after the paragraph's own newline.
-            if (Math.random() < 0.15) { // 15% chance to add an empty line
+            if (Math.random() < 0.15) { 
                 console.log("%c[MOCK TEXT] Adding extra empty line", 'color:skyblue');
                 appendToTextOutput('\n');
             }
             
-            // Schedule next append with a random delay
-            const randomDelay = getRandomInt(200, 1500); // 0.2s to 1.5s
+            const randomDelay = getRandomInt(200, 1500); 
             mockTextIntervalId = window.setTimeout(appendMockText, randomDelay);
         }
         
-        appendMockText(); // Start the first one immediately, then it will self-schedule
+        appendMockText(); 
     }
 
     startMockTextGeneration();
-    // --- End new "busy" text generation ---
 
     initComposer(scene, camera, renderer);
+
+    if (bokehPass) {
+        const uniforms = bokehPass.uniforms as unknown as BokehPassUniforms;
+        uniforms.aperture.value = 0.0001;
+        uniforms.maxblur.value = 0.002;
+    }
 }
 
 function releaseWorld(){
@@ -218,31 +205,23 @@ function releaseWorld(){
     let fps = releaseFPS();
     scene.remove(cube);
     scene.remove(fps);
-    // Release TextOutput Widget
-    // if (textOutputTestInterval) { // old interval
-    //     clearInterval(textOutputTestInterval);
-    //     textOutputTestInterval = undefined;
-    // }
     if (mockTextIntervalId) {
-        clearTimeout(mockTextIntervalId); // Use clearTimeout for IDs from setTimeout
+        clearTimeout(mockTextIntervalId);
         mockTextIntervalId = undefined;
     }
     releaseTextOutputWidget();
-    // Note: The textOutputWidget itself is a THREE.Group, its children are disposed by releaseTextOutputWidget.
-    // We might need to explicitly remove it from the scene if releaseTextOutputWidget doesn't handle that.
-    // For now, assuming scene graph cleanup is handled if widget is removed by its release function.
-    // Release AxisIndicator Widget
     if (axisGizmo) {
         releaseAxisIndicator(axisGizmo);
         axisGizmo = null;
     }
-    stopAxisGizmoAnimation(); // Stop the animation
+    stopAxisGizmoAnimation();
+    releasePages();
     cyberClusters.length = 0;
 }
 
 function initCyberpunkSpace() {
     for (let i = 0; i < MAX_CLUSTERS / 2; i++) {
-        const spawnX = CLUSTER_SPAWN_X_RIGHT - Math.random() * CLUSTER_SPAWN_X_RIGHT * 2.5; // Wider initial spread
+        const spawnX = CLUSTER_SPAWN_X_RIGHT - Math.random() * CLUSTER_SPAWN_X_RIGHT * 2.5; 
         const cluster = createCluster(spawnX);
         cyberClusters.push(cluster);
     }
@@ -275,65 +254,104 @@ function releaseCyberpunkSpace() {
 }
 
 function renderWorld(isStereo: boolean) {
-    const currentTime = performance.now(); // Get current time for throttling
+    const currentTime = performance.now(); 
 
     if (axisGizmo && glslCube) {
-        // Throttle the update of axisGizmo text values
         if (currentTime - lastAxisGizmoUpdateTimestamp > axisGizmoUpdateInterval) {
             const cubePosition = new THREE.Vector3();
             glslCube.getWorldPosition(cubePosition);
             axisGizmo.showValues(cubePosition);
-            lastAxisGizmoUpdateTimestamp = currentTime; // Update timestamp
+            lastAxisGizmoUpdateTimestamp = currentTime; 
         }
     }
 
+    const lookAtTargetForDOF = new THREE.Vector3(0, 0, 0);
+    if (glslCube) {
+        glslCube.getWorldPosition(lookAtTargetForDOF);
+    }
+
+    const distanceToFocus = camera.position.distanceTo(lookAtTargetForDOF);
+    console.log("Distance to Focus: ", distanceToFocus); // Log distance for debugging
+
+    if (bokehPass) {
+        const uniforms = bokehPass.uniforms as unknown as BokehPassUniforms;
+        uniforms.focus.value = distanceToFocus;
+    }
+
     if(isStereo){
-        renderWorldByStereo();
+        renderWorldByStereo(lookAtTargetForDOF);
         return;
     }
-    renderWorldByMono();
+    renderWorldByMono(lookAtTargetForDOF);
 }
 
-function renderWorldByStereo() {
+function renderWorldByStereo(lookAtTarget: THREE.Vector3) {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const halfWidth = width / 2;
 
-    // Update eye cameras (aspect, fov, near, far, position, lookAt)
-    leftCamera.aspect = halfWidth / height;
-    rightCamera.aspect = halfWidth / height;
+    const mainCameraPosition = new THREE.Vector3();
+    camera.getWorldPosition(mainCameraPosition);
+    const mainCameraQuaternion = new THREE.Quaternion();
+    camera.getWorldQuaternion(mainCameraQuaternion);
+
     leftCamera.fov = camera.fov;
     rightCamera.fov = camera.fov;
     leftCamera.near = camera.near;
     rightCamera.near = camera.near;
     leftCamera.far = camera.far;
     rightCamera.far = camera.far;
-    leftCamera.position.set(-eyeSep / 2, 0, 5);
-    rightCamera.position.set(eyeSep / 2, 0, 5);
-    leftCamera.lookAt(0, 0, 0);
-    rightCamera.lookAt(0, 0, 0);
+    leftCamera.aspect = halfWidth / height;
+    rightCamera.aspect = halfWidth / height;
+
+    const rightDirection = new THREE.Vector3(1, 0, 0).applyQuaternion(mainCameraQuaternion);
+
+    const leftEyeOffset = rightDirection.clone().multiplyScalar(-eyeSep / 2);
+    leftCamera.position.copy(mainCameraPosition).add(leftEyeOffset);
+
+    const rightEyeOffset = rightDirection.clone().multiplyScalar(eyeSep / 2);
+    rightCamera.position.copy(mainCameraPosition).add(rightEyeOffset);
+
+    leftCamera.lookAt(lookAtTarget);
+    rightCamera.lookAt(lookAtTarget);
+
+    leftCamera.updateProjectionMatrix();
+    rightCamera.updateProjectionMatrix();
 
     // Left Eye
-    renderPass.camera = leftCamera;
-    leftCamera.updateProjectionMatrix();
+    renderPass.camera = leftCamera; 
     renderer.setViewport(0, 0, halfWidth, height);
     renderer.setScissor(0, 0, halfWidth, height);
     composer.render();
 
     // Right Eye
-    renderPass.camera = rightCamera;
-    rightCamera.updateProjectionMatrix();
+    renderPass.camera = rightCamera; 
     renderer.setViewport(halfWidth, 0, halfWidth, height);
     renderer.setScissor(halfWidth, 0, halfWidth, height);
     composer.render();
 }
 
-function renderWorldByMono() {
+function renderWorldByMono(lookAtTarget: THREE.Vector3) {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    //只显示左眼
-    renderPass.camera = camera;
-    camera.updateProjectionMatrix();
+
+    const mainCameraPosition = new THREE.Vector3();
+    camera.getWorldPosition(mainCameraPosition);
+    const mainCameraQuaternion = new THREE.Quaternion();
+    camera.getWorldQuaternion(mainCameraQuaternion);
+
+    const rightDirection = new THREE.Vector3(1, 0, 0).applyQuaternion(mainCameraQuaternion);
+    rightCamera.position.copy(mainCameraPosition).add(rightDirection.clone().multiplyScalar(eyeSep / 2));
+
+    rightCamera.fov = camera.fov;
+    rightCamera.near = camera.near;
+    rightCamera.far = camera.far;
+    rightCamera.aspect = width / height; 
+
+    rightCamera.lookAt(lookAtTarget);
+    rightCamera.updateProjectionMatrix();
+
+    renderPass.camera = rightCamera;
     renderer.setViewport(0, 0, width, height);
     renderer.setScissor(0, 0, width, height);
     composer.render();

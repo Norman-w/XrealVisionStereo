@@ -1,4 +1,4 @@
-import { initPage as initBigCirclePage, releasePage as  releaseBigCirclePage, renderPage as renderBigCirclePage} from "./bigCircle.ts";
+import { initPage as initBigCirclePage, releasePage as  releaseBigCirclePage } from "./bigCircle.ts";
 import { initPage as initSnakesInCubePage } from "./snakeInCube";
 
 function initPages() {
@@ -11,7 +11,7 @@ function initPages() {
 }
 
 function renderPages() {
-    renderBigCirclePage();
+    // renderBigCirclePage(); // Removed call, as renderPage is no longer used/exported from bigCircle.ts
 }
 
 function releasePages() {

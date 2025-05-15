@@ -50,6 +50,9 @@ class CircleState {
             side: THREE.DoubleSide,
             transparent: true,
             opacity: Math.random() * 0.3 + 0.5, // 增加最小透明度
+            polygonOffset: true, // Enable polygon offset
+            polygonOffsetFactor: -1, // Try -1 first
+            polygonOffsetUnits: -1   // Try -1 first
         });
 
         this.circle = new THREE.Mesh(this.geometry, this.material);
@@ -96,9 +99,9 @@ class CircleState {
                     this.circle.rotation.z = params.rotation;
                 }
             })
-            .to(params, {
+            .to(params, { // Chained .to() for the reverse animation
                 thetaLength: initialLength,
-                rotation: targetRotation + Math.PI * (1.5 + Math.random()),
+                rotation: targetRotation + Math.PI * (1.5 + Math.random()), // Further rotate for yoyo effect
                 duration: 2 + Math.random() * 3,
                 ease: "power2.inOut",
                 onUpdate: () => {
@@ -121,60 +124,18 @@ class CircleState {
 }
 
 const circles: CircleState[] = [];
+const numberOfCircles = 10; // 创建10个圆环
+const radiusStep = 20; // 每个圆环半径增加20
+const initialRadius = 50; // 第一个圆环的内半径
 
-// 修改初始化圆环的函数
 function initAllCircles() {
-    let lastOuterRadius = 0;
-    const largestCircleOuterRadius = 220;
-    const minCircleInnerRadius = 60;
-    const randomCircleCount = Math.floor(Math.random() * 10) + 20;
-    const allCircleWidth = Math.floor(Math.random() * (largestCircleOuterRadius - minCircleInnerRadius)) + minCircleInnerRadius;
-
-    const circleWidths = [];
-    let totalWidth = 0;
-    for (let i = 0; i < randomCircleCount; i++) {
-        const width = Math.random() * (allCircleWidth / randomCircleCount);
-        circleWidths.push(width);
-        totalWidth += width;
-    }
-
-    const circleWidthsRatio = circleWidths.map((width) => width / totalWidth);
-
-    for (let i = 0; i < randomCircleCount; i++) {
-        const innerRadius = lastOuterRadius;
-        const outerRadius = innerRadius + allCircleWidth * circleWidthsRatio[i];
-
+    for (let i = 0; i < numberOfCircles; i++) {
+        const innerRadius = initialRadius + i * radiusStep;
+        const outerRadius = innerRadius + radiusStep * (0.3 + Math.random() * 0.4); // 外半径稍微随机一点，但要大于内半径
         const circleState = new CircleState(innerRadius, outerRadius);
-
-        circleState.circle.castShadow = true;
-        circleState.circle.receiveShadow = true;
-
         circles.push(circleState);
-        lastOuterRadius = outerRadius;
-    }
-
-    circles.forEach(circleState => {
         page.add(circleState.circle);
-    });
-}
-
-// 修改 createCircle 函数（如果不再使用可以删除）
-
-// 修改渲染函数
-function renderPage() {
-    // 使用 GSAP 时，不需要在这里更新动画
-    // GSAP 会自动处理动画更新
-}
-
-// 修改释放函数
-function releasePage() {
-    // 清理所有动画和几何体
-    circles.forEach(circleState => {
-        circleState.animation.kill();
-        circleState.geometry.dispose();
-        circleState.material.dispose();
-    });
-    circles.length = 0;
+    }
 }
 
 function initPage() {
@@ -198,4 +159,31 @@ function initPage() {
     return page;
 }
 
-export {initPage, renderPage, releasePage};
+function releasePage() {
+    circles.forEach(circleState => {
+        circleState.animation.kill(); // 停止动画
+        circleState.geometry.dispose();
+        circleState.material.dispose();
+        page.remove(circleState.circle);
+    });
+    circles.length = 0; // 清空数组
+
+    const panel = page.getObjectByName("panel") as THREE.Mesh;
+    if (panel) {
+        if (panel.geometry) {
+            panel.geometry.dispose();
+        }
+        if (panel.material) {
+            // Check if material is an array or single material
+            if (Array.isArray(panel.material)) {
+                panel.material.forEach(m => m.dispose());
+            } else {
+                (panel.material as THREE.Material).dispose();
+            }
+        }
+        page.remove(panel);
+    }
+    // page group本身不需要特殊dispose，子对象移除和dispose后，它会被垃圾回收
+}
+
+export { initPage, releasePage };
