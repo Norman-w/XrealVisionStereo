@@ -12,6 +12,8 @@ import {leftCamera} from "./camera/leftEyeCamera.ts";
 import {rightCamera} from "./camera/rightEyeCamera.ts";
 import {initPages} from "./object/page";
 import { initWidget as initTextOutputWidget, releaseWidget as releaseTextOutputWidget, appendText as appendToTextOutput } from './object/widget/textOutput';
+import { initAxisIndicator, releaseAxisIndicator, type AxisIndicator } from './object/widget/axisIndicator';
+import gsap from 'gsap';
 
 let scene: THREE.Scene;
 let renderer: THREE.WebGLRenderer;
@@ -21,6 +23,61 @@ const eyeSep = 0.06;
 let mockTextIntervalId: number | undefined;
 let cubeGLSLShaders: { vertex: string, fragments: string[] } | null = null;
 let allShaderLines: string[] = [];
+let axisGizmo: AxisIndicator | null = null;
+let glslCube: THREE.Mesh | null = null;
+let currentAxisAnimationTargetIndex: number = -1; // To track the current target
+
+const axisAnimationPath: THREE.Vector3[] = [
+    new THREE.Vector3(-500, 250, -800),  // 1. Top-Left-Back
+    new THREE.Vector3(500, 250, -800),   // 2. Top-Right-Back
+    new THREE.Vector3(500, -250, -800),  // 3. Bottom-Right-Back
+    new THREE.Vector3(-500, -250, -800), // 4. Bottom-Left-Back
+    new THREE.Vector3(-500, -250, -1200),// 5. Bottom-Left-Front (connects from 4)
+    new THREE.Vector3(500, -250, -1200), // 6. Bottom-Right-Front
+    new THREE.Vector3(500, 250, -1200),  // 7. Top-Right-Front
+    new THREE.Vector3(-500, 250, -1200)  // 8. Top-Left-Front (connects to 1)
+];
+
+function animateToNextRandomPoint() {
+    if (!axisGizmo) return;
+
+    let nextIndex = currentAxisAnimationTargetIndex;
+    // Ensure the next point is different from the current one
+    while (nextIndex === currentAxisAnimationTargetIndex) {
+        nextIndex = Math.floor(Math.random() * axisAnimationPath.length);
+    }
+    currentAxisAnimationTargetIndex = nextIndex;
+    const targetPoint = axisAnimationPath[nextIndex];
+
+    gsap.to(axisGizmo.position, {
+        x: targetPoint.x,
+        y: targetPoint.y,
+        z: targetPoint.z,
+        duration: 3, // Duration for each segment
+        ease: "power1.inOut",
+        onComplete: animateToNextRandomPoint // Loop by calling itself on complete
+    });
+}
+
+function startAxisGizmoAnimation() {
+    if (!axisGizmo) return;
+    // Set initial position to the start of the path, or a random point
+    currentAxisAnimationTargetIndex = 0; // Start with the first point for predictability
+    axisGizmo.position.copy(axisAnimationPath[currentAxisAnimationTargetIndex]);
+    // Start the first animation leg
+    animateToNextRandomPoint();
+}
+
+function stopAxisGizmoAnimation() {
+    // if (axisGizmoAnimation) { // Old timeline logic
+    //     axisGizmoAnimation.kill();
+    //     axisGizmoAnimation = null;
+    // }
+    if (axisGizmo) {
+        gsap.killTweensOf(axisGizmo.position); // Kill any active tweens on the position
+    }
+    currentAxisAnimationTargetIndex = -1; // Reset index
+}
 
 function initWorld(canvasContainer: HTMLDivElement){
     scene = new THREE.Scene();
@@ -34,8 +91,8 @@ function initWorld(canvasContainer: HTMLDivElement){
 
     let fps = initFPS();
     scene.add(fps);
-    let glslCube = initCube();
-    scene.add(glslCube);
+    glslCube = initCube();
+    scene.add(glslCube!);
     let groundGrid = initGroundGrid();
     scene.add(groundGrid);
     let lights = initDefaultMainLights();
@@ -51,6 +108,11 @@ function initWorld(canvasContainer: HTMLDivElement){
     textOutputWidget.position.set(0, 0, -1500); // Positioned 1.5 meters away, centered vertically for now
     textOutputWidget.scale.set(1, 1, 1); // Scale is now 1:1 as widget is in mm
     scene.add(textOutputWidget);
+
+    // Initialize AxisIndicator Widget
+    axisGizmo = initAxisIndicator(true, 80); // User updated: axis length 80mm
+    scene.add(axisGizmo);
+    startAxisGizmoAnimation(); // Start the animation
 
     // Get GLSL shaders
     cubeGLSLShaders = getCubeRawGLSLShaders();
@@ -166,6 +228,13 @@ function releaseWorld(){
     // Note: The textOutputWidget itself is a THREE.Group, its children are disposed by releaseTextOutputWidget.
     // We might need to explicitly remove it from the scene if releaseTextOutputWidget doesn't handle that.
     // For now, assuming scene graph cleanup is handled if widget is removed by its release function.
+    // Release AxisIndicator Widget
+    if (axisGizmo) {
+        releaseAxisIndicator(axisGizmo);
+        axisGizmo = null;
+    }
+    stopAxisGizmoAnimation(); // Stop the animation
+    cyberClusters.length = 0;
 }
 
 function initCyberpunkSpace() {
@@ -203,6 +272,12 @@ function releaseCyberpunkSpace() {
 }
 
 function renderWorld(isStereo: boolean) {
+    if (axisGizmo && glslCube) {
+        const cubePosition = new THREE.Vector3();
+        glslCube.getWorldPosition(cubePosition); // Get world position
+        axisGizmo.showValues(cubePosition);      // Update gizmo display
+    }
+
     if(isStereo){
         renderWorldByStereo();
         return;
