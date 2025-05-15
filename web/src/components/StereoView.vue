@@ -22,7 +22,7 @@ import {camera, cameraState} from "../world/camera/main.ts";
 import {bloomPass, composer} from "../world/post-processing/composer.ts";
 import {initWorld, releaseWorld, renderer, renderWorld, scene} from "../world/world.ts";
 import {animateFPS} from "../world/billboard/fps.ts";
-import {animateCube} from "../world/test-object/cube.ts";
+import {animateCube} from "../world/test-object/glslCube.ts";
 import {animateCyberSpaceClusters} from "../world/object/cluster/container.ts";
 
 const canvasContainer = ref<HTMLDivElement | null>(null);

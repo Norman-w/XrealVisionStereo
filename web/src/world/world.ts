@@ -3,7 +3,7 @@ import {CLUSTER_SPAWN_X_RIGHT, MAX_CLUSTERS} from "./definition/constant.ts";
 import {cyberClusters} from "./object/cluster/container.ts";
 import * as THREE from "three";
 import {initFPS, releaseFPS} from "./billboard/fps.ts";
-import {initCube, releaseCube, getCubeRawGLSLShaders} from "./test-object/cube.ts";
+import {initCube, releaseCube, getCubeRawGLSLShaders} from "./test-object/glslCube.ts";
 import {initGroundGrid} from "./ground/grid.ts";
 import {initDefaultMainLights} from "./light/main.ts";
 import {camera} from "./camera/main.ts";
@@ -34,8 +34,8 @@ function initWorld(canvasContainer: HTMLDivElement){
 
     let fps = initFPS();
     scene.add(fps);
-    let cube = initCube();
-    scene.add(cube);
+    let glslCube = initCube();
+    scene.add(glslCube);
     let groundGrid = initGroundGrid();
     scene.add(groundGrid);
     let lights = initDefaultMainLights();
@@ -78,7 +78,6 @@ function initWorld(canvasContainer: HTMLDivElement){
         if (allShaderLines.length === 0) return '';
         const snippetLines: string[] = [];
         const numLinesToPick = getRandomInt(1, 5); // Pick 1 to 5 lines for a snippet
-        let currentLine = '';
 
         for (let i = 0; i < numLinesToPick; i++) {
             const randomIndex = Math.floor(Math.random() * allShaderLines.length);
